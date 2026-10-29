@@ -1,0 +1,255 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1, user-scalable=no" />
+  <meta name="theme-color" content="#0b0d0a" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <title>CALL OF DUTY: CATS — Whisker Warfare</title>
+  <link rel="preload" href="./assets/fonts/bebas-neue-latin-400-normal.woff2" as="font" type="font/woff2" crossorigin />
+  <link rel="preload" href="./assets/fonts/rajdhani-latin-600-normal.woff2" as="font" type="font/woff2" crossorigin />
+  <link rel="stylesheet" href="./styles.css" />
+  <script type="importmap">
+    {
+      "imports": {
+        "three": "./vendor/three/three.module.min.js",
+        "three/addons/": "./vendor/three/addons/"
+      }
+    }
+  </script>
+</head>
+<body>
+  <main id="app">
+    <canvas id="game" aria-label="Cat warfare game view"></canvas>
+
+    <div id="grade"></div>
+    <div id="vignette"></div>
+    <div id="damageFlash"></div>
+    <div id="healGlow"></div>
+    <div id="grain"></div>
+
+    <section id="hud" aria-live="polite">
+      <div class="hud-top">
+        <div class="objective-card">
+          <div class="objective-eyebrow"><span class="live-dot"></span> OPERATION NINE LIVES</div>
+          <div class="objective-title">SECURE THE FISH MARKET</div>
+          <div class="objective-meta">WAVE <b id="waveNum">01</b><span class="slash">/</span>HOSTILES <b id="enemyCount">00</b><span class="slash">/</span>SCORE <b id="scoreNum">0</b></div>
+          <div class="objective-bar"><i id="waveProgress"></i></div>
+        </div>
+
+        <div class="compass-wrap">
+          <div class="compass-rule">
+            <div class="compass-track" id="compassTrack"></div>
+            <div class="compass-caret"></div>
+          </div>
+          <div class="compass-readout"><span id="compassDir">N</span><b id="compassDeg">000</b></div>
+        </div>
+
+        <div class="minimap-card">
+          <div class="minimap-head"><span>TACTICAL</span><span class="minimap-live">LIVE</span></div>
+          <canvas id="minimap" width="220" height="220"></canvas>
+          <div class="minimap-footer"><span id="minimapSector">SECTOR D-9</span><span>34°N 118°E</span></div>
+        </div>
+      </div>
+
+      <div id="killfeed"></div>
+
+      <div id="crosshair" class="crosshair">
+        <i class="ch ch-t"></i><i class="ch ch-b"></i><i class="ch ch-l"></i><i class="ch ch-r"></i>
+        <i class="ch-dot"></i>
+        <div id="hitmarker"><i></i><i></i><i></i><i></i></div>
+      </div>
+
+      <div id="waveBanner" class="wave-banner">
+        <div class="wave-kicker">INCOMING</div>
+        <div class="wave-title">WAVE 1</div>
+        <div class="wave-sub">THE CLAWS ARE COMING</div>
+      </div>
+
+      <div id="damageNumbers"></div>
+
+      <div class="hud-bottom">
+        <div class="squad-card">
+          <div class="squad-avatar">
+            <svg viewBox="0 0 64 64" aria-hidden="true"><path d="M13 28 9 10l16 10a30 30 0 0 1 14 0L55 10l-4 18c3 4 4 8 4 12 0 14-11 21-23 21S9 54 9 40c0-4 1-8 4-12Z" fill="none" stroke="currentColor" stroke-width="4"/><path d="M22 40h1m18 0h1M26 49c4 3 8 3 12 0" stroke="currentColor" stroke-width="4" stroke-linecap="round"/></svg>
+          </div>
+          <div class="squad-info">
+            <div class="squad-name">CAPT. WHISKERS</div>
+            <div class="health-row">
+              <div class="health-icon"><svg viewBox="0 0 24 24"><path d="M12 20s-7-4.4-7-9.2C5 8 7 6 9.4 6c1.3 0 2.2.6 2.6 1.3C12.4 6.6 13.3 6 14.6 6 17 6 19 8 19 10.8 19 15.6 12 20 12 20Z" fill="currentColor"/></svg></div>
+              <div class="health-track"><i id="healthFill"></i><span></span></div>
+              <b id="healthNum">100</b>
+            </div>
+            <div class="status-line"><span class="status-pip"></span><span id="statusText">NINE LIVES INTACT</span></div>
+          </div>
+        </div>
+
+        <div class="streak-card" id="streakCard">
+          <div class="streak-label">STREAK</div>
+          <div class="streak-value" id="streakNum">0</div>
+          <div class="streak-bonus" id="streakBonus">NO BONUS</div>
+        </div>
+
+        <div class="ammo-card">
+          <div class="weapon-line"><span class="weapon-name">FISH-47</span><span class="weapon-mode" id="fireMode">AUTO</span></div>
+          <div class="ammo-line"><b id="ammoMag">30</b><span class="ammo-sep">/</span><span id="ammoReserve">180</span></div>
+          <div class="ammo-dots" id="ammoDots"></div>
+          <div class="utility-row">
+            <div class="grenade" id="grenadePill"><span class="grenade-icon">◉</span> YARN BOMB <b id="grenadeCount">2</b></div>
+            <div class="reload-state" id="reloadState">READY</div>
+          </div>
+        </div>
+      </div>
+
+      <button id="pauseBtn" class="icon-btn pause-btn" aria-label="Pause">
+        <span></span><span></span>
+      </button>
+
+      <div id="toast" class="toast"></div>
+    </section>
+
+    <section id="touchUI" aria-label="Touch controls">
+      <div id="stickZone" class="stick-zone">
+        <div id="stickBase" class="stick-base">
+          <div class="stick-ring"></div>
+          <div id="stickKnob" class="stick-knob"><span></span></div>
+          <div class="stick-label">MOVE</div>
+        </div>
+      </div>
+      <div id="lookZone" class="look-zone"><div class="look-hint">DRAG TO LOOK</div></div>
+      <div class="touch-actions">
+        <button id="tiltBtn" class="touch-chip">TILT OFF</button>
+        <button id="grenadeBtn" class="touch-btn touch-grenade" aria-label="Throw yarn bomb"><span class="tb-icon">◉</span><span class="tb-label">YARN</span><i class="cooldown-ring" id="grenadeRing"></i></button>
+        <button id="reloadBtn" class="touch-btn touch-reload" aria-label="Reload"><span class="tb-icon">↻</span><span class="tb-label">RELOAD</span></button>
+        <button id="jumpBtn" class="touch-btn touch-jump" aria-label="Jump"><span class="tb-icon">△</span><span class="tb-label">JUMP</span></button>
+        <button id="aimBtn" class="touch-btn touch-aim" aria-label="Aim"><span class="tb-icon">◎</span><span class="tb-label">AIM</span></button>
+        <button id="fireBtn" class="fire-btn" aria-label="Fire"><span class="fire-core"></span><span class="fire-label">FIRE</span></button>
+      </div>
+    </section>
+
+    <section id="menu" class="screen menu">
+      <div class="menu-noise"></div>
+      <div class="menu-topline">
+        <span>OMGITHUB ORIGINAL</span>
+        <span class="menu-topline-mid">MOBILE TACTICAL DIVISION</span>
+        <span>BUILD 1.0.4 / FELINE FRONT</span>
+      </div>
+
+      <div class="menu-grid">
+        <div class="menu-left">
+          <div class="rank-badge">
+            <div class="rank-slashes">///</div>
+            <div><span>RANK</span><b>SGT. SCRATCH</b></div>
+            <div class="rank-level">09</div>
+          </div>
+
+          <h1 class="game-title">
+            <span class="title-call">CALL OF DUTY</span>
+            <span class="title-cats">CATS<span class="title-tm">™</span></span>
+          </h1>
+          <div class="title-rule"><i></i><span>WHISKER WARFARE</span><i></i></div>
+          <p class="menu-blurb">The fish market is overrun. You are the last nine-lived operator on the pier. Lock, load, and land on your feet.</p>
+
+          <div class="deploy-row">
+            <button id="startBtn" class="deploy-btn" aria-label="Start">
+              <span class="deploy-arrow">▶</span>
+              <span class="deploy-text"><b>DEPLOY</b><small>TAP TO ENTER THE AO</small></span>
+              <span class="deploy-lines"></span>
+            </button>
+            <div class="deploy-aside">
+              <span class="sig-dot"></span>
+              <div><b>SQUAD LINK</b><small>CONNECTION SECURE</small></div>
+            </div>
+          </div>
+
+          <div class="platform-row">
+            <span>PHONE + TABLET</span><i></i><span>TOUCH READY</span><i></i><span>OPTIONAL TILT</span><i></i><span>HEADPHONES ON</span>
+          </div>
+        </div>
+
+        <aside class="mission-card">
+          <div class="mission-corner"></div>
+          <header>
+            <span class="mission-tag">MISSION BRIEF</span>
+            <span class="mission-code">04 / NINE LIVES</span>
+          </header>
+          <h2>OPERATION<br /><em>CATNIP</em></h2>
+          <p class="mission-copy">Hostile clowder has seized the docks. Reclaim the tuna stockpile and send a message the whole litter will remember.</p>
+
+          <ul class="objective-list">
+            <li><span>01</span><div><b>CLEAR THE FISH MARKET</b><small>Neutralize every hostile feline</small></div><i class="obj-check"></i></li>
+            <li><span>02</span><div><b>SURVIVE THE WAVES</b><small>The clowder sends its best</small></div><i class="obj-check"></i></li>
+            <li><span>03</span><div><b>KEEP YOUR NINE LIVES</b><small>Health regenerates out of combat</small></div><i class="obj-check"></i></li>
+          </ul>
+
+          <div class="control-grid">
+            <div><span class="keycap">L</span><b>JOYSTICK</b><small>MOVE</small></div>
+            <div><span class="keycap">R</span><b>DRAG</b><small>LOOK</small></div>
+            <div><span class="keycap fire-key">●</span><b>FIRE</b><small>HOLD</small></div>
+            <div><span class="keycap">↻</span><b>RELOAD</b><small>TAP</small></div>
+          </div>
+
+          <div class="tilt-panel">
+            <div class="tilt-copy">
+              <b>GYRO AIM</b>
+              <small id="tiltHint">Optional accelerometer tilt. iOS asks permission.</small>
+            </div>
+            <button id="tiltToggle" class="toggle-switch" role="switch" aria-checked="false" aria-label="Enable tilt controls"><span></span></button>
+          </div>
+
+          <div class="mission-footer">
+            <span class="ping"><i></i>PING 12MS</span>
+            <span>SOLO / OFFLINE</span>
+            <span class="warning">FELINE CONTACT EXPECTED</span>
+          </div>
+        </aside>
+      </div>
+
+      <div class="menu-bottom">
+        <span>© 2026 OMGITHUB — A PARODY OF MODERN WARFARE. NO CATS WERE HARMED.</span>
+        <span class="build-hash">CATS://MW-NINE-LIVES</span>
+      </div>
+    </section>
+
+    <section id="pause" class="screen pause hidden">
+      <div class="pause-panel">
+        <div class="pause-kicker">TACTICAL PAUSE</div>
+        <h2>HOLD<br /><em>THE LINE</em></h2>
+        <div class="pause-stats">
+          <div><span>WAVE</span><b id="pauseWave">01</b></div>
+          <div><span>SCORE</span><b id="pauseScore">0</b></div>
+          <div><span>KILLS</span><b id="pauseKills">0</b></div>
+        </div>
+        <button id="resumeBtn" class="pause-primary">RESUME OPERATION</button>
+        <div class="pause-options">
+          <button id="pauseSoundBtn" class="ghost-btn">SOUND: ON</button>
+          <button id="pauseQualityBtn" class="ghost-btn">QUALITY: HIGH</button>
+          <button id="pauseRestartBtn" class="ghost-btn danger">RESTART</button>
+        </div>
+        <p class="pause-tip">TIP: YARN BOMBS clear a whole clowder. Use them when the whiskers get too close.</p>
+      </div>
+    </section>
+
+    <section id="gameover" class="screen gameover hidden">
+      <div class="go-panel">
+        <div class="go-kicker">OPERATOR DOWN</div>
+        <h2>OUT OF<br /><em>NINE LIVES</em></h2>
+        <p>The clowder holds the fish market... for now.</p>
+        <div class="go-stats">
+          <div><span>FINAL SCORE</span><b id="goScore">0</b></div>
+          <div><span>WAVES HELD</span><b id="goWave">0</b></div>
+          <div><span>KITTIES DOWN</span><b id="goKills">0</b></div>
+        </div>
+        <button id="restartBtn" class="pause-primary">REDEPLOY</button>
+        <div class="go-rank">RANK UP: <b id="goRank">KITTEN CADET</b></div>
+      </div>
+    </section>
+
+    <div id="rotateHint"><span>ROTATE FOR WIDESCREEN</span><i></i></div>
+    <div id="loading"><div class="loader-paw">🐾</div><span>CALIBRATING CLAWS</span><i></i></div>
+  </main>
+  <script type="module" src="./src/main.js"></script>
+</body>
+</html>
