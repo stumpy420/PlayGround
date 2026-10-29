@@ -1,0 +1,400 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
+    <meta name="theme-color" content="#071018" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-title" content="Paws of Duty" />
+    <meta name="description" content="Paws of Duty: Nine Lives. A mobile-ready cat commando first-person shooter." />
+    <link rel="manifest" href="/manifest.webmanifest" />
+    <link rel="icon" href="/icon.svg" type="image/svg+xml" />
+    <link rel="apple-touch-icon" href="/icon-192.png" />
+    <title>Paws of Duty: Nine Lives</title>
+    <script type="module" crossorigin src="/assets/index-BusfzViS.js"></script>
+    <link rel="stylesheet" crossorigin href="/assets/index-Hzu-k-du.css">
+  </head>
+  <body>
+    <div id="app">
+      <canvas id="scene" aria-label="Paws of Duty game scene"></canvas>
+
+      <div class="screen-fx" aria-hidden="true">
+        <div class="vignette"></div>
+        <div class="scanlines"></div>
+        <div id="damageFlash" class="damage-flash"></div>
+        <div id="lowHealth" class="low-health"></div>
+      </div>
+
+      <div id="hud" class="hud" aria-hidden="true">
+        <div class="hud-top">
+          <div class="mission-chip">
+            <span class="chip-kicker">OPERATION</span>
+            <span class="chip-title">NINE LIVES</span>
+          </div>
+          <div class="wave-block">
+            <span class="wave-label">WAVE</span>
+            <span id="waveNumber" class="wave-number">01</span>
+            <div class="wave-progress"><i id="waveProgress"></i></div>
+            <span id="enemyCount" class="enemy-count">4 HOSTILES</span>
+          </div>
+          <div class="score-block">
+            <span class="score-label">SCORE</span>
+            <span id="scoreValue" class="score-value">000000</span>
+            <span id="bestValue" class="best-value">BEST 000000</span>
+          </div>
+        </div>
+
+        <div id="killfeed" class="killfeed" aria-live="polite"></div>
+
+        <div class="crosshair" id="crosshair">
+          <span class="ch ch-t"></span>
+          <span class="ch ch-r"></span>
+          <span class="ch ch-b"></span>
+          <span class="ch ch-l"></span>
+          <span class="ch-dot"></span>
+          <span id="hitmarker" class="hitmarker"></span>
+        </div>
+        <div id="hitDirection" class="hit-direction"></div>
+
+        <div class="hud-bottom">
+          <div class="health-panel">
+            <div class="health-icon">
+              <svg><use href="#i-paw" /></svg>
+            </div>
+            <div class="health-content">
+              <div class="health-meta">
+                <span>VITALS</span>
+                <strong id="healthValue">100</strong>
+              </div>
+              <div class="health-bar"><i id="healthFill"></i></div>
+              <div class="health-status" id="healthStatus">COMBAT READY</div>
+            </div>
+          </div>
+
+          <div class="objective-panel">
+            <span class="objective-kicker">OBJECTIVE</span>
+            <span id="objectiveText">HOLD SARDINE BAY</span>
+            <span class="objective-sub" id="objectiveSub">Survive the mechanized mouse patrol</span>
+          </div>
+
+          <div class="ammo-panel">
+            <div class="weapon-name"><span>FISH-47</span><small>ASSAULT CARBINE</small></div>
+            <div class="ammo-count">
+              <strong id="ammoValue">30</strong>
+              <span class="ammo-divider">/</span>
+              <span id="reserveValue">150</span>
+            </div>
+            <div id="reloadHint" class="reload-hint"><kbd>R</kbd> RELOAD</div>
+            <div id="reloadRing" class="reload-ring"><i></i></div>
+          </div>
+        </div>
+
+        <div id="waveBanner" class="wave-banner">
+          <span class="banner-kicker">INCOMING</span>
+          <strong id="bannerTitle">WAVE 01</strong>
+          <span id="bannerSub">SARDINE BAY // NIGHT PATROL</span>
+        </div>
+
+        <div id="toast" class="toast"></div>
+        <div id="combo" class="combo"></div>
+
+        <div class="hud-actions">
+          <button id="soundBtn" class="icon-btn" aria-label="Toggle sound">
+            <svg class="sound-on"><use href="#i-sound-on" /></svg>
+            <svg class="sound-off"><use href="#i-sound-off" /></svg>
+          </button>
+          <button id="pauseBtn" class="icon-btn" aria-label="Pause game">
+            <svg><use href="#i-pause" /></svg>
+          </button>
+        </div>
+
+        <div id="desktopHints" class="desktop-hints">
+          <span><kbd>WASD</kbd> MOVE</span>
+          <span><kbd>MOUSE</kbd> AIM</span>
+          <span><kbd>LMB</kbd> FIRE</span>
+          <span><kbd>R</kbd> RELOAD</span>
+        </div>
+      </div>
+
+      <div id="touchUI" class="touch-ui" aria-hidden="true">
+        <div id="stickZone" class="stick-zone">
+          <div class="stick-ring"><i></i></div>
+          <div id="stickKnob" class="stick-knob">
+            <svg><use href="#i-paw" /></svg>
+          </div>
+          <span class="stick-label">MOVE</span>
+        </div>
+
+        <button id="btnFire" class="touch-btn fire-btn" aria-label="Fire weapon">
+          <span class="fire-rings"></span>
+          <svg><use href="#i-crosshair" /></svg>
+          <small>FIRE</small>
+        </button>
+
+        <div class="touch-side">
+          <button id="btnAim" class="touch-btn small-btn" aria-label="Aim down sights">
+            <svg><use href="#i-zoom" /></svg>
+            <small>AIM</small>
+          </button>
+          <button id="btnReload" class="touch-btn small-btn" aria-label="Reload">
+            <svg><use href="#i-reload" /></svg>
+            <small>RELOAD</small>
+          </button>
+          <button id="btnJump" class="touch-btn small-btn" aria-label="Jump">
+            <svg><use href="#i-jump" /></svg>
+            <small>JUMP</small>
+          </button>
+        </div>
+
+        <div id="tiltChip" class="tilt-chip">
+          <svg><use href="#i-tilt" /></svg>
+          <span>TILT AIM ON</span>
+        </div>
+      </div>
+
+      <section id="menu" class="screen menu-screen">
+        <div class="menu-grid" aria-hidden="true"></div>
+        <header class="topbar">
+          <div class="brand">
+            <div class="brand-mark"><svg><use href="#i-paw" /></svg></div>
+            <div class="brand-text">
+              <span>MEOWFARE DIVISION</span>
+              <small>SPECIAL OPERATIONS // UNIT 09</small>
+            </div>
+          </div>
+          <div class="topbar-right">
+            <div class="status-led"><i></i> UPLINK SECURE</div>
+            <div class="build-tag">BUILD 1.0.9</div>
+          </div>
+        </header>
+
+        <main class="menu-content">
+          <div class="menu-main">
+            <div class="eyebrow"><span></span> CLASSIFIED FIELD OPERATION</div>
+            <h1 class="game-title">
+              <span class="title-small">PAWS</span>
+              <span class="title-of">OF</span>
+              <span class="title-big">DUTY</span>
+            </h1>
+            <div class="title-rule"><i></i><span>NINE LIVES</span><i></i></div>
+            <p class="tagline">
+              The mice have gone robotic. The wharf is overrun. You have nine lives and one
+              very large fish-shaped rifle.
+            </p>
+
+            <div class="menu-actions">
+              <button id="startBtn" class="start-btn">
+                <span class="start-glow"></span>
+                <span class="start-main">START MISSION</span>
+                <span class="start-sub">DEPLOY TO SARDINE BAY</span>
+              </button>
+              <button id="briefingBtn" class="ghost-btn">MISSION BRIEF</button>
+            </div>
+
+            <div class="menu-meta">
+              <div><span>BEST SCORE</span><strong id="menuBest">000000</strong></div>
+              <div><span>KILLS</span><strong id="menuKills">000</strong></div>
+              <div><span>LIVES</span><strong>09</strong></div>
+            </div>
+          </div>
+
+          <aside class="dossier">
+            <div class="dossier-head">
+              <span>FIELD DOSSIER</span>
+              <small>EYES ONLY</small>
+            </div>
+            <div class="dossier-map">
+              <div class="radar">
+                <span class="radar-sweep"></span>
+                <span class="blip b1"></span>
+                <span class="blip b2"></span>
+                <span class="blip b3"></span>
+                <span class="blip b4"></span>
+                <span class="radar-ring r1"></span>
+                <span class="radar-ring r2"></span>
+                <span class="radar-cross h"></span>
+                <span class="radar-cross v"></span>
+              </div>
+              <div class="map-label">SARDINE BAY<br /><small>34° 09' N // 118° 27' W</small></div>
+            </div>
+            <div class="dossier-list">
+              <div><span>THREAT</span><strong class="danger">CRITICAL</strong></div>
+              <div><span>TERRAIN</span><strong>URBAN WHARF</strong></div>
+              <div><span>WEAPON</span><strong>FISH-47</strong></div>
+              <div><span>LOADOUT</span><strong>NINE LIVES</strong></div>
+            </div>
+            <div class="dossier-note">
+              <span>HANDLER NOTE</span>
+              <p>“The mice are relentless. Keep moving, use the crates, and aim for the glowing eyes.”</p>
+            </div>
+          </aside>
+        </main>
+
+        <footer class="menu-footer">
+          <div class="settings-strip">
+            <button id="tiltToggle" class="setting-toggle" aria-pressed="false">
+              <span class="toggle-track"><i></i></span>
+              <span><strong>TILT AIM</strong><small>OPTIONAL GYRO</small></span>
+            </button>
+            <button id="menuSoundToggle" class="setting-toggle" aria-pressed="true">
+              <span class="toggle-track"><i></i></span>
+              <span><strong>AUDIO</strong><small>TACTICAL SOUND</small></span>
+            </button>
+            <button id="qualityToggle" class="setting-toggle" aria-pressed="true">
+              <span class="toggle-track"><i></i></span>
+              <span><strong>VFX</strong><small>BLOOM + SHADOWS</small></span>
+            </button>
+          </div>
+          <div class="footer-controls">
+            <span><kbd>WASD</kbd> / <kbd>TOUCH</kbd> MOVE</span>
+            <span><kbd>MOUSE</kbd> / <kbd>DRAG</kbd> AIM</span>
+            <span><kbd>LMB</kbd> / <kbd>FIRE</kbd> SHOOT</span>
+            <span><kbd>R</kbd> RELOAD</span>
+          </div>
+          <div class="footer-legal">MEOWFARE DIVISION // ANDROID &amp; iOS READY // HEADPHONES RECOMMENDED</div>
+        </footer>
+      </section>
+
+      <section id="briefing" class="screen modal-screen hidden">
+        <div class="modal-card briefing-card">
+          <div class="modal-head">
+            <span>MISSION BRIEFING</span>
+            <button class="close-btn" data-close="briefing" aria-label="Close briefing">
+              <svg><use href="#i-close" /></svg>
+            </button>
+          </div>
+          <h2>OPERATION: NINE LIVES</h2>
+          <div class="briefing-grid">
+            <div>
+              <span class="brief-num">01</span>
+              <h3>HOLD THE BAY</h3>
+              <p>Mechanized mice are storming Sardine Bay. Survive every wave and protect the last milk crate.</p>
+            </div>
+            <div>
+              <span class="brief-num">02</span>
+              <h3>AIM FOR THE EYES</h3>
+              <p>Headshots deal triple damage. Chain eliminations to build your score multiplier.</p>
+            </div>
+            <div>
+              <span class="brief-num">03</span>
+              <h3>STAY MOBILE</h3>
+              <p>Use the fish crates and market stalls for cover. Your vitals regenerate after a short lull.</p>
+            </div>
+            <div>
+              <span class="brief-num">04</span>
+              <h3>TOUCH &amp; TILT</h3>
+              <p>Drag the right side to aim, use the left stick to move, or enable tilt aim for gyro control.</p>
+            </div>
+          </div>
+          <button class="start-btn compact" data-close="briefing"><span class="start-main">UNDERSTOOD</span></button>
+        </div>
+      </section>
+
+      <section id="pause" class="screen modal-screen hidden">
+        <div class="modal-card pause-card">
+          <div class="modal-head">
+            <span>TACTICAL PAUSE</span>
+            <small>OPERATION SUSPENDED</small>
+          </div>
+          <h2>HOLD POSITION</h2>
+          <div class="pause-stats">
+            <div><span>WAVE</span><strong id="pauseWave">01</strong></div>
+            <div><span>SCORE</span><strong id="pauseScore">000000</strong></div>
+            <div><span>KILLS</span><strong id="pauseKills">000</strong></div>
+          </div>
+          <div class="pause-actions">
+            <button id="resumeBtn" class="start-btn compact"><span class="start-main">RESUME</span></button>
+            <button id="resumeTiltBtn" class="ghost-btn wide">ENABLE / CALIBRATE TILT</button>
+            <button id="quitBtn" class="ghost-btn wide danger-text">ABORT MISSION</button>
+          </div>
+        </div>
+      </section>
+
+      <section id="gameover" class="screen modal-screen hidden">
+        <div class="modal-card gameover-card">
+          <div class="go-kicker">ALL NINE LIVES EXPENDED</div>
+          <h2>MISSION FAILED</h2>
+          <p class="go-sub">The mice got the milk. This time.</p>
+          <div class="go-score">
+            <span>FINAL SCORE</span>
+            <strong id="finalScore">000000</strong>
+            <small id="newBest" class="new-best hidden">NEW PERSONAL BEST</small>
+          </div>
+          <div class="go-stats">
+            <div><span>WAVE REACHED</span><strong id="finalWave">01</strong></div>
+            <div><span>ELIMINATIONS</span><strong id="finalKills">000</strong></div>
+            <div><span>ACCURACY</span><strong id="finalAccuracy">0%</strong></div>
+            <div><span>HEADSHOTS</span><strong id="finalHeads">000</strong></div>
+          </div>
+          <div class="pause-actions">
+            <button id="redeployBtn" class="start-btn compact"><span class="start-main">REDEPLOY</span></button>
+            <button id="menuBtn" class="ghost-btn wide">RETURN TO BASE</button>
+          </div>
+        </div>
+      </section>
+
+      <div id="rotateHint" class="rotate-hint">
+        <svg><use href="#i-rotate" /></svg>
+        <span>ROTATE DEVICE FOR FULL FIELD OF VIEW</span>
+      </div>
+
+      <div id="boot" class="boot">
+        <div class="boot-mark"><svg><use href="#i-paw" /></svg></div>
+        <div class="boot-title">PAWS OF DUTY</div>
+        <div class="boot-bar"><i id="bootBar"></i></div>
+        <div class="boot-status" id="bootStatus">CALIBRATING WHISKERS</div>
+      </div>
+
+      <svg class="svg-sprite" aria-hidden="true">
+        <symbol id="i-paw" viewBox="0 0 64 64">
+          <path d="M32 34c-8.7 0-15 6-15 13 0 5 3.8 8 9.4 8 2.2 0 3.8-.5 5.6-.5s3.4.5 5.6.5c5.6 0 9.4-3 9.4-8 0-7-6.3-13-15-13Z" />
+          <ellipse cx="15" cy="25" rx="6.7" ry="8.2" transform="rotate(-22 15 25)" />
+          <ellipse cx="26.5" cy="16.5" rx="6.6" ry="8.2" transform="rotate(-8 26.5 16.5)" />
+          <ellipse cx="38" cy="16.5" rx="6.6" ry="8.2" transform="rotate(8 38 16.5)" />
+          <ellipse cx="49" cy="25" rx="6.7" ry="8.2" transform="rotate(22 49 25)" />
+        </symbol>
+        <symbol id="i-crosshair" viewBox="0 0 64 64">
+          <path d="M32 8v15m0 18v15M8 32h15m18 0h15" />
+          <circle cx="32" cy="32" r="10" />
+          <circle cx="32" cy="32" r="1.8" fill="currentColor" stroke="none" />
+        </symbol>
+        <symbol id="i-reload" viewBox="0 0 64 64">
+          <path d="M50 27a19 19 0 1 0-2.3 15" />
+          <path d="M50 12v15H35" />
+        </symbol>
+        <symbol id="i-jump" viewBox="0 0 64 64">
+          <path d="M32 52V22m0 0-11 11m11-11 11 11" />
+          <path d="M14 54h36" />
+        </symbol>
+        <symbol id="i-zoom" viewBox="0 0 64 64">
+          <path d="M25 10H10v15m29-15h15v15M25 54H10V39m29 15h15V39" />
+          <circle cx="32" cy="32" r="7" />
+        </symbol>
+        <symbol id="i-sound-on" viewBox="0 0 64 64">
+          <path d="M12 25h9l12-10v34L21 39h-9z" />
+          <path d="M42 24a11 11 0 0 1 0 16m6-23a19 19 0 0 1 0 30" />
+        </symbol>
+        <symbol id="i-sound-off" viewBox="0 0 64 64">
+          <path d="M12 25h9l12-10v34L21 39h-9z" />
+          <path d="m42 26 12 12m0-12L42 38" />
+        </symbol>
+        <symbol id="i-pause" viewBox="0 0 64 64">
+          <path d="M22 14v36M42 14v36" />
+        </symbol>
+        <symbol id="i-tilt" viewBox="0 0 64 64">
+          <rect x="20" y="8" width="24" height="48" rx="5" />
+          <path d="M27 14h10M10 35a22 22 0 0 1 6-15m38 15a22 22 0 0 0-6-15" />
+        </symbol>
+        <symbol id="i-rotate" viewBox="0 0 64 64">
+          <rect x="17" y="9" width="30" height="46" rx="5" />
+          <path d="M28 49h8M8 28a24 24 0 0 1 43-14m5 22A24 24 0 0 1 13 50" />
+        </symbol>
+        <symbol id="i-close" viewBox="0 0 64 64">
+          <path d="m18 18 28 28m0-28L18 46" />
+        </symbol>
+      </svg>
+    </div>
+  </body>
+</html>
