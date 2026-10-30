@@ -1,0 +1,183 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<meta name="theme-color" content="#0a0d0f">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<title>DUST PROTOCOL — One bomb. Two impostors. No trust.</title>
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+<div id="app">
+  <canvas id="game" aria-label="Dust Protocol game area"></canvas>
+
+  <div id="hud" class="hidden">
+    <div class="topbar">
+      <div class="round-box">
+        <div class="phase-row"><span class="live-dot"></span><span id="phaseLabel">ROUND LIVE</span></div>
+        <div id="roundTimer" class="timer">3:00</div>
+      </div>
+      <div class="intel-box">
+        <div class="intel-row"><span>INTEL</span><span id="intelPct">0%</span></div>
+        <div class="intel-track"><div id="intelFill"></div></div>
+        <div id="kitLabel" class="kit-label">DEFUSE KIT: LOCKED</div>
+        <div id="ammoLine" class="ammo-line">PISTOL · 12 / 12</div>
+      </div>
+      <div class="minimap-wrap">
+        <canvas id="minimap" width="168" height="112"></canvas>
+        <div class="minimap-scan"></div>
+      </div>
+    </div>
+
+    <div id="crewList" class="crew-list"></div>
+    <div id="roleBadge" class="role-badge crew">CREWMATE</div>
+    <div id="feed" class="feed"></div>
+    <div id="alert" class="alert"></div>
+    <div id="contextHint" class="context-hint"></div>
+    <div id="crosshair" class="crosshair"></div>
+
+    <div id="controls">
+      <div id="moveZone" class="stick-zone move-zone" aria-label="Move joystick">
+        <div class="stick-base"><div class="stick-knob"></div></div>
+        <span class="zone-label">MOVE</span>
+      </div>
+      <div id="aimZone" class="stick-zone aim-zone" aria-label="Aim and fire joystick">
+        <div class="stick-base"><div class="stick-knob"></div></div>
+        <span class="zone-label">AIM / FIRE</span>
+      </div>
+      <button id="btnUse" class="action-btn use" type="button"><span class="btn-icon">◎</span><span class="btn-label">USE</span></button>
+      <button id="btnFire" class="action-btn fire" type="button"><span class="btn-icon">✦</span><span class="btn-label">FIRE</span></button>
+      <button id="btnKnife" class="action-btn knife hidden" type="button"><span class="btn-icon">✕</span><span class="btn-label">STRIKE</span></button>
+      <button id="btnSabotage" class="action-btn sabotage hidden" type="button"><span class="btn-icon">⚡</span><span class="btn-label">LIGHTS</span></button>
+      <button id="btnReport" class="action-btn report hidden" type="button"><span class="btn-icon">!</span><span class="btn-label">REPORT</span></button>
+      <button id="btnMeeting" class="icon-btn meeting hidden" type="button">EMERGENCY</button>
+      <button id="btnPause" class="icon-btn pause" type="button" aria-label="Pause">Ⅱ</button>
+    </div>
+
+    <div id="progressWrap" class="progress-wrap hidden">
+      <div class="progress-label" id="progressLabel">DEFUSING</div>
+      <div class="progress-track"><div id="progressFill"></div></div>
+    </div>
+    <div id="spectateBar" class="spectate-bar hidden">SPECTATING — <span id="spectateReason">YOU WERE ELIMINATED</span></div>
+  </div>
+
+  <section id="titleScreen" class="screen">
+    <div class="title-bg"></div>
+    <div class="title-inner">
+      <div class="kicker"><span></span>TACTICAL SOCIAL DEDUCTION<span></span></div>
+      <h1>DUST<span>PROTOCOL</span></h1>
+      <p class="tagline">One bomb. Two impostors. <em>No trust.</em></p>
+      <div class="title-actions">
+        <button id="btnPlay" class="primary-btn" type="button">PLAY</button>
+        <button id="btnHow" class="ghost-btn" type="button">HOW TO PLAY</button>
+      </div>
+      <div class="title-settings">
+        <button id="btnTilt" class="toggle" type="button">TILT AIM: OFF</button>
+        <button id="btnSound" class="toggle" type="button">SOUND: ON</button>
+        <button id="btnRole" class="toggle" type="button">ROLE: RANDOM</button>
+      </div>
+      <div class="title-stats" id="titleStats">0 ROUNDS · 0 WINS</div>
+      <div class="title-foot">PHONE / TABLET · TOUCH + TILT · LANDSCAPE RECOMMENDED</div>
+    </div>
+    <div class="title-roster" id="titleRoster"></div>
+  </section>
+
+  <div id="taskModal" class="modal hidden">
+    <div class="task-card">
+      <div class="task-head">
+        <div><span class="task-kicker" id="taskKicker">CREW TASK</span><h2 id="taskTitle">WIRES</h2></div>
+        <button id="taskClose" class="close-btn" type="button" aria-label="Close">✕</button>
+      </div>
+      <p id="taskDesc" class="task-desc"></p>
+      <div id="taskBody" class="task-body"></div>
+      <div id="taskStatus" class="task-status"></div>
+    </div>
+  </div>
+
+  <div id="meetingModal" class="modal hidden">
+    <div class="meeting-card">
+      <div class="meeting-head">
+        <div><span class="meeting-kicker" id="meetingKicker">EMERGENCY MEETING</span><h2 id="meetingTitle">Who is the impostor?</h2></div>
+        <div class="meeting-clock"><span id="meetingTimer">22</span><small id="meetingPhase">DISCUSS</small></div>
+      </div>
+      <div class="meeting-body">
+        <div class="chat-panel">
+          <div id="meetingChat" class="chat"></div>
+          <div class="quick-chat">
+            <button type="button" data-quick="tasks">I was on tasks</button>
+            <button type="button" data-quick="where">Where was the body?</button>
+            <button type="button" data-quick="quiet">Everyone is quiet…</button>
+          </div>
+        </div>
+        <div class="vote-panel">
+          <div class="vote-title">SELECT A SUSPECT</div>
+          <div id="voteGrid" class="vote-grid"></div>
+          <div class="vote-buttons">
+            <button id="accuseBtn" class="ghost-btn small" type="button">ACCUSE</button>
+            <button id="voteBtn" class="primary-btn small" type="button" disabled>VOTE</button>
+            <button id="skipBtn" class="ghost-btn small" type="button">SKIP</button>
+          </div>
+          <div id="voteHint" class="vote-hint">Tap an operator, then vote. Or skip.</div>
+        </div>
+      </div>
+      <div id="voteTally" class="vote-tally hidden"></div>
+    </div>
+  </div>
+
+  <div id="endModal" class="modal hidden">
+    <div id="endCard" class="end-card">
+      <div class="end-kicker" id="endKicker">ROUND COMPLETE</div>
+      <h2 id="endTitle">CREW VICTORY</h2>
+      <p id="endReason" class="end-reason"></p>
+      <div id="endReveal" class="end-reveal"></div>
+      <div id="endStats" class="end-stats"></div>
+      <div class="end-actions">
+        <button id="btnRematch" class="primary-btn" type="button">REMATCH</button>
+        <button id="btnMenu" class="ghost-btn" type="button">MENU</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="pauseModal" class="modal hidden">
+    <div class="pause-card">
+      <span class="task-kicker">TACTICAL PAUSE</span>
+      <h2>HOLD POSITION</h2>
+      <div class="pause-settings">
+        <button id="btnTilt2" class="toggle" type="button">TILT AIM: OFF</button>
+        <button id="btnSound2" class="toggle" type="button">SOUND: ON</button>
+      </div>
+      <p class="pause-tip">Tip: tap USE near a task station, a body, or the bomb. The right thumb aims and fires. Tilt aim is optional and asks for motion permission on iOS.</p>
+      <div class="end-actions">
+        <button id="btnResume" class="primary-btn" type="button">RESUME</button>
+        <button id="btnQuit" class="ghost-btn" type="button">ABANDON ROUND</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="howModal" class="modal hidden">
+    <div class="how-card">
+      <div class="task-head">
+        <div><span class="task-kicker">FIELD MANUAL</span><h2>HOW TO PLAY</h2></div>
+        <button id="howClose" class="close-btn" type="button" aria-label="Close">✕</button>
+      </div>
+      <div class="how-grid">
+        <div class="how-item"><b>01 · THE ROUND</b><p>A 3:00 bomb-defusal round. The infiltrators must plant at Site A before the clock runs out. The crew must finish 5 intel tasks, then defuse the bomb.</p></div>
+        <div class="how-item"><b>02 · THE PARANOIA</b><p>Two of the six operators are impostors in disguise. Witness a kill, find a body, and report it. Meetings freeze the round for a vote.</p></div>
+        <div class="how-item"><b>03 · THE CONTROLS</b><p>Left thumb moves. Right thumb aims and fires. USE interacts. KNIFE and LIGHTS appear if you are the impostor. Tilt aim is optional.</p></div>
+        <div class="how-item"><b>04 · THE WIN</b><p>Crew win by ejecting or killing both impostors, defusing the bomb, or surviving the round. Impostors win by detonation or by reaching parity.</p></div>
+      </div>
+      <div class="how-controls">
+        <span><b>TOUCH</b> left stick move · right stick aim/fire · USE · REPORT</span>
+        <span><b>DESKTOP</b> WASD · mouse aim · click fire · E use · R report · F knife · SPACE meeting · ESC pause</span>
+      </div>
+      <button id="howOk" class="primary-btn" type="button">GOT IT</button>
+    </div>
+  </div>
+
+  <div id="rotateHint" class="rotate-hint hidden">↻ Rotate for tactical view</div>
+</div>
+<script type="module" src="js/main.js"></script>
+</body>
+</html>
