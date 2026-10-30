@@ -1,0 +1,212 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
+  <meta name="theme-color" content="#05090d" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <title>Crew Strike — Among Us rules in a Counter-Strike round</title>
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='6' fill='%2305090d'/%3E%3Ccircle cx='16' cy='16' r='9' fill='%234fe3c8'/%3E%3Cellipse cx='19' cy='14' rx='5' ry='4' fill='%23eafffb'/%3E%3C/svg%3E" />
+  <link rel="stylesheet" href="./styles.css" />
+</head>
+<body>
+  <div id="app">
+    <canvas id="world"></canvas>
+    <div class="vignette" aria-hidden="true"></div>
+    <div class="scanlines" aria-hidden="true"></div>
+
+    <div id="hud" class="hud hidden">
+      <div class="hud-top">
+        <div class="status-panel">
+          <div class="status-top">
+            <div class="round-box"><span>ROUND</span><strong id="timer">03:20</strong></div>
+            <div id="roleBadge" class="role-badge">CREW</div>
+          </div>
+          <div class="task-meta"><span>TASKS</span><span id="taskCount">0/8</span></div>
+          <div class="task-bar"><i id="taskBar"></i></div>
+          <div class="alive-row">
+            <span class="pip"></span><span id="aliveCount">7</span><em>ALIVE</em>
+            <span id="ammoText" class="ammo">6 / 12</span>
+          </div>
+        </div>
+        <div class="right-rail">
+          <div class="mini-wrap"><canvas id="minimap" aria-label="Minimap"></canvas><span>MAP</span></div>
+          <div class="rail-btns">
+            <button id="muteBtn" class="icon-btn" aria-label="Toggle sound">SND</button>
+            <button id="tiltBtn" class="icon-btn" aria-label="Tilt aim">TILT</button>
+          </div>
+        </div>
+      </div>
+
+      <div id="objective" class="objective hidden">
+        <span class="obj-icon">!</span>
+        <div class="obj-copy"><strong id="objectiveTitle">SABOTAGE</strong><span id="objectiveSub">REACTOR CORE</span></div>
+        <div class="obj-timer" id="objectiveTimer">38</div>
+      </div>
+
+      <div id="toastStack" class="toast-stack"></div>
+      <div id="ghostBar" class="ghost-bar hidden">GHOST PROTOCOL — finish tasks to help the crew</div>
+    </div>
+
+    <div id="controls" class="controls hidden">
+      <div id="stickLeft" class="stick left">
+        <div class="stick-base"></div><div class="knob"></div><span>MOVE</span>
+      </div>
+      <div id="stickRight" class="stick right">
+        <div class="stick-base"></div><div class="knob"></div><span id="aimStickLabel">AIM / FIRE</span>
+      </div>
+      <button id="actionBtn" class="action-btn" aria-label="Interact">
+        <span id="actionLabel">USE</span>
+        <small id="actionSub">HOLD</small>
+        <i id="actionRing" class="action-ring"></i>
+      </button>
+      <button id="reloadBtn" class="reload-btn" aria-label="Reload">R<small id="ammoMini">6</small></button>
+      <button id="sabotageBtn" class="sabotage-btn hidden" aria-label="Sabotage">SABOTAGE<small id="sabotageSub">READY</small></button>
+      <div id="desktopHints" class="desktop-hints">WASD MOVE · MOUSE AIM / FIRE · E INTERACT · R RELOAD · Q SABOTAGE</div>
+    </div>
+
+    <div id="tiltIndicator" class="tilt-indicator hidden">
+      <div class="tilt-dial"><i id="tiltNeedle"></i></div><span>TILT AIM</span>
+    </div>
+
+    <section id="menu" class="screen menu-screen">
+      <div class="menu-grid">
+        <div class="menu-main">
+          <div class="eyebrow"><i></i>SOCIAL DEDUCTION // ONE ROUND<i></i></div>
+          <h1 class="logo"><span>CREW</span><span class="accent">STRIKE</span></h1>
+          <p class="tagline">Among Us rules inside a Counter-Strike round.<br class="wide-only" />
+            Trust the room. Watch the angles. Nobody respawns.</p>
+
+          <div class="role-picker" id="rolePicker">
+            <button class="role-card selected" data-role="crew">
+              <span class="role-tag">CREW</span>
+              <strong>Finish the job</strong>
+              <small>12 tasks. Two impostors. Defuse the sabotage.</small>
+            </button>
+            <button class="role-card" data-role="impostor">
+              <span class="role-tag red">IMPOSTOR</span>
+              <strong>Break the room</strong>
+              <small>Fake tasks. Knife the isolated. Blow the site.</small>
+            </button>
+            <button class="role-card" data-role="random">
+              <span class="role-tag dim">RANDOM</span>
+              <strong>Roll the dice</strong>
+              <small>50/50 showcase draw. No takebacks.</small>
+            </button>
+          </div>
+          <p id="roleDesc" class="role-desc">Deploy as crew. Complete all twelve consoles or eject both impostors before the round clock dies.</p>
+
+          <div class="color-picker">
+            <span>SUIT</span>
+            <div id="colors" class="colors"></div>
+          </div>
+
+          <button id="deployBtn" class="deploy-btn">DEPLOY<span>›</span></button>
+
+          <details class="manual">
+            <summary>FIELD MANUAL</summary>
+            <div class="manual-body">
+              <div><b>MOVE</b> left stick / WASD</div>
+              <div><b>AIM + FIRE</b> right stick / mouse</div>
+              <div><b>INTERACT</b> hold the big action button / E</div>
+              <div><b>REPORT</b> stand over a body, then the action button becomes REPORT</div>
+              <div><b>MEETINGS</b> one tap on a suspect, then CONFIRM VOTE</div>
+              <div><b>TILT</b> optional phone accelerometer aim. iOS asks for motion permission.</div>
+              <div><b>WIN</b> crew: finish tasks or eject every impostor. impostors: reach parity, blow the bomb, or run out the clock.</div>
+            </div>
+          </details>
+        </div>
+
+        <aside class="menu-side">
+          <div class="brief-card">
+            <span class="brief-kicker">ROUND BRIEF</span>
+            <ul>
+              <li><b>7</b> operators. <b>2</b> impostors.</li>
+              <li><b>12</b> consoles to secure.</li>
+              <li><b>3:20</b> containment window.</li>
+              <li>Guns are loud. Knives are not.</li>
+              <li>Dead crew become ghosts and can still finish tasks.</li>
+            </ul>
+          </div>
+          <div class="side-note">Fan-made mashup. Not affiliated with InnerSloth or Valve.</div>
+        </aside>
+      </div>
+      <div class="menu-fade" aria-hidden="true"></div>
+    </section>
+
+    <section id="roleScreen" class="screen role-screen hidden">
+      <div class="role-panel">
+        <div class="role-head"><span>YOUR ROLE</span><i id="roleLine"></i></div>
+        <h2 id="roleTitle">CREWMATE</h2>
+        <p id="roleBlurb">Secure the facility. Trust carefully.</p>
+        <div id="roleMates" class="role-mates hidden"></div>
+        <div class="role-objectives">
+          <span class="obj-head">OBJECTIVES</span>
+          <ul id="roleObjectives"></ul>
+        </div>
+        <button id="beginBtn" class="deploy-btn compact">BEGIN ROUND<span>›</span></button>
+        <p class="role-foot">The round clock starts when you begin.</p>
+      </div>
+    </section>
+
+    <section id="meetingScreen" class="screen meeting-screen hidden">
+      <div class="meeting-wrap">
+        <header class="meeting-head">
+          <div>
+            <span class="meeting-kicker" id="meetingKicker">EMERGENCY MEETING</span>
+            <h2 id="meetingTitle">BODY REPORTED</h2>
+            <p id="meetingSub">CAFETERIA</p>
+          </div>
+          <div class="meeting-clock"><span id="meetingTimer">22</span><small>SEC</small></div>
+        </header>
+        <div class="meeting-main">
+          <div class="meeting-left">
+            <div id="voteGrid" class="vote-grid"></div>
+            <div class="vote-actions">
+              <button id="confirmVote" class="confirm-vote" disabled>CONFIRM VOTE</button>
+              <button id="skipVote" class="skip-vote">SKIP</button>
+            </div>
+            <p id="voteHint" class="vote-hint">Select a suspect, then confirm. Skip if you have no read.</p>
+          </div>
+          <aside class="meeting-chat">
+            <div class="chat-head"><span>COMMS</span><i></i></div>
+            <div id="chatLog" class="chat-log"></div>
+          </aside>
+        </div>
+        <div class="meeting-result hidden" id="meetingResult">
+          <div class="eject-strip"><span id="ejectLabel">EJECTED</span></div>
+          <div id="ejectAvatar" class="eject-avatar"></div>
+          <h3 id="ejectName">NO ONE</h3>
+          <p id="ejectRole">The crew skipped.</p>
+          <div id="ejectCounts" class="eject-counts"></div>
+          <div class="auto-bar"><i id="autoBar"></i></div>
+        </div>
+      </div>
+    </section>
+
+    <section id="resultScreen" class="screen result-screen hidden">
+      <div class="result-panel">
+        <span id="resultKicker" class="result-kicker">ROUND COMPLETE</span>
+        <h2 id="resultTitle">CREW WINS</h2>
+        <p id="resultReason">All tasks secured.</p>
+        <div class="result-stats">
+          <div><strong id="statTasks">0</strong><span>TASKS</span></div>
+          <div><strong id="statKills">0</strong><span>KILLS</span></div>
+          <div><strong id="statVotes">0</strong><span>VOTES</span></div>
+          <div><strong id="statTime">0:00</strong><span>TIME LEFT</span></div>
+        </div>
+        <div id="roster" class="roster"></div>
+        <div class="result-actions">
+          <button id="againBtn" class="deploy-btn compact">RUN IT BACK<span>›</span></button>
+          <button id="menuBtn" class="ghost-btn">MAIN MENU</button>
+        </div>
+      </div>
+    </section>
+
+    <div id="rotateHint" class="rotate-hint hidden">ROTATE FOR A WIDER VIEW</div>
+  </div>
+  <script type="module" src="./src/main.js"></script>
+</body>
+</html>
