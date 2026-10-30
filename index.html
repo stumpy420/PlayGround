@@ -1,0 +1,238 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+  <meta name="theme-color" content="#0b0d0a" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="description" content="Traitor Strike: Among Us social deduction inside a Counter-Strike round. Touch controls, optional tilt aim." />
+  <title>TRAITOR STRIKE // Dust Protocol</title>
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='12' fill='%230b0d0a'/%3E%3Cpath d='M14 44 32 12l18 32-18-8z' fill='%23f5b942'/%3E%3Ccircle cx='32' cy='34' r='4' fill='%23ff4b3e'/%3E%3C/svg%3E" />
+</head>
+<body>
+  <canvas id="game" aria-label="Traitor Strike game view"></canvas>
+
+  <div id="fx-layer" aria-hidden="true">
+    <div class="fx grain"></div>
+    <div class="fx scan"></div>
+    <div id="vignette" class="fx"></div>
+    <div id="danger-vignette" class="fx"></div>
+    <div id="dark-vignette" class="fx"></div>
+    <div id="flash" class="fx"></div>
+  </div>
+
+  <!-- ================= START ================= -->
+  <section id="start-screen" class="screen">
+    <div class="start-grid" aria-hidden="true"></div>
+    <header class="start-topbar">
+      <div class="brand-mark"><span class="brand-slash"></span> OMGTAC <b>//</b> ROUND 07</div>
+      <div class="classified">CLASSIFIED <span>DUST PROTOCOL</span></div>
+    </header>
+
+    <div class="start-main">
+      <div class="eyebrow"><span class="pulse-dot"></span> AMONG US RULES · COUNTER-STRIKE ROUND</div>
+      <h1 class="title">
+        <span class="title-top">TRAITOR</span>
+        <span class="title-bottom">STRIKE</span>
+        <span class="title-rule"></span>
+      </h1>
+      <p class="tagline">ONE OF THEM IS NOT ON YOUR SIDE.</p>
+      <p class="brief">The bomb is armed. Five operators are locked in.<br />One is the traitor. Finish the defusal protocol — or find them before the clock runs out.</p>
+
+      <div class="start-actions">
+        <button id="btn-play" class="btn btn-primary" aria-label="Play"><span class="btn-glow"></span><span class="btn-label">PLAY</span><span class="btn-sub">DEPLOY</span></button>
+        <button id="btn-howto" class="btn btn-ghost">HOW TO PLAY</button>
+      </div>
+
+      <div class="start-toggles">
+        <button id="btn-tilt" class="chip" aria-pressed="false"><span class="chip-dot"></span>TILT AIM: OFF</button>
+        <button id="btn-sound" class="chip" aria-pressed="true"><span class="chip-dot"></span>SOUND: ON</button>
+      </div>
+      <div class="ios-note">iOS asks for motion permission when tilt is enabled.</div>
+    </div>
+
+    <footer class="start-footer">
+      <div class="spec"><b>05</b><span>OPERATORS</span></div>
+      <div class="spec"><b>01</b><span>TRAITOR</span></div>
+      <div class="spec"><b>06</b><span>TASKS</span></div>
+      <div class="spec"><b>04:00</b><span>ROUND CLOCK</span></div>
+      <div class="start-status"><span id="boot-status">TACTICAL LINK READY</span><i></i></div>
+    </footer>
+  </section>
+
+  <!-- ================= HUD ================= -->
+  <main id="hud" class="hidden">
+    <div class="hud-top">
+      <div class="hud-left">
+        <div class="role-card">
+          <div class="role-space">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2a5 5 0 0 0-5 5v2H6a2 2 0 0 0-2 2v7a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-7a2 2 0 0 0-2-2h-1V7a5 5 0 0 0-5-5Zm-3 7V7a3 3 0 1 1 6 0v2Z" fill="currentColor"/></svg>
+          </div>
+          <div class="role-copy"><span>YOUR ROLE</span><b id="role-name">CREWMATE</b></div>
+        </div>
+        <div class="crew-pill"><span class="crew-icon"></span><b id="crew-alive">5</b><span>ALIVE</span></div>
+      </div>
+
+      <div class="objective">
+        <div class="objective-row"><span>DEFUSAL PROTOCOL</span><b id="task-count">0 / 6</b></div>
+        <div id="task-bar" class="task-bar">
+          <i></i><i></i><i></i><i></i><i></i><i></i>
+        </div>
+        <div id="objective-hint" class="objective-hint">Complete tasks or expose the traitor</div>
+      </div>
+
+      <div class="hud-right">
+        <div class="clock-wrap">
+          <div class="clock-label">ROUND CLOCK</div>
+          <div id="timer" class="timer">04:00</div>
+        </div>
+        <canvas id="radar" width="320" height="320" aria-label="Tactical radar"></canvas>
+        <button id="btn-meeting" class="meet-btn" aria-label="Call emergency meeting" title="Emergency meeting (one use)">!</button>
+      </div>
+    </div>
+
+    <div id="crosshair" class="crosshair" aria-hidden="true">
+      <i class="ch-top"></i><i class="ch-bottom"></i><i class="ch-left"></i><i class="ch-right"></i><span class="ch-dot"></span>
+      <b id="hitmarker" class="hitmarker"></b>
+    </div>
+
+    <div id="prompt" class="prompt hidden">
+      <span class="prompt-key" id="prompt-key">E</span>
+      <span class="prompt-copy"><b id="prompt-text">USE</b><small id="prompt-sub"></small></span>
+    </div>
+
+    <div id="toasts" class="toasts" aria-live="polite"></div>
+
+    <div id="status-chips" class="status-chips"></div>
+
+    <div id="desktop-hints" class="desktop-hints">
+      <span><b>WASD</b> MOVE</span><span><b>MOUSE</b> AIM</span><span><b>CLICK</b> FIRE</span><span><b>R</b> RELOAD</span><span><b>E</b> USE</span><span><b>F</b> REPORT</span><span><b>ESC</b> PAUSE</span>
+    </div>
+
+    <div id="touch-controls" aria-hidden="false">
+      <div id="stick-zone" class="stick-zone">
+        <div class="stick-ring"></div>
+        <div id="stick-knob" class="stick-knob"><span></span></div>
+        <div class="stick-label">MOVE</div>
+      </div>
+      <div id="look-zone" class="look-zone"></div>
+      <div class="touch-actions">
+        <button id="btn-action" class="tbtn tbtn-action" disabled><span id="action-label">USE</span></button>
+        <button id="btn-reload" class="tbtn tbtn-small" aria-label="Reload">R</button>
+        <button id="btn-fire" class="tbtn tbtn-fire" aria-label="Fire"><span>FIRE</span></button>
+      </div>
+    </div>
+
+    <div class="ammo-wrap">
+      <div class="ammo-label">SIDEARM</div>
+      <div class="ammo"><b id="ammo">6</b><span id="ammo-max">/ 6</span></div>
+      <div id="reload-bar" class="reload-bar"><i></i></div>
+    </div>
+
+    <button id="btn-pause" class="pause-btn" aria-label="Pause">Ⅱ</button>
+  </main>
+
+  <!-- ================= TASK ================= -->
+  <section id="task-modal" class="screen modal-screen hidden" aria-modal="true" role="dialog">
+    <div class="task-shell">
+      <header class="task-head">
+        <div class="task-id"><span id="task-code">TASK 01</span><h2 id="task-title">DEFUSE UPLINK</h2></div>
+        <div class="task-state"><span class="task-live-dot"></span>PROTOCOL OPEN</div>
+      </header>
+      <div id="task-body" class="task-body"></div>
+      <footer class="task-foot">
+        <div class="task-progress"><span id="task-step">STEP 1 OF 1</span><i><b id="task-step-bar"></b></i></div>
+        <button id="task-close" class="btn btn-ghost btn-small">ABORT</button>
+      </footer>
+    </div>
+  </section>
+
+  <!-- ================= MEETING ================= -->
+  <section id="meeting" class="screen modal-screen hidden" aria-modal="true" role="dialog">
+    <div class="meeting-shell">
+      <header class="meeting-head">
+        <div>
+          <div class="meeting-kicker"><span class="pulse-dot red"></span><span id="meeting-kicker">BODY REPORTED</span></div>
+          <h2 id="meeting-title">WHO IS THE TRAITOR?</h2>
+          <p id="meeting-sub">Discuss, then vote. The crew can only eject one operator.</p>
+        </div>
+        <div class="meeting-clock"><span>TIME TO VOTE</span><b id="vote-timer">20</b></div>
+      </header>
+
+      <div class="meeting-layout">
+        <div class="crew-grid" id="crew-grid"></div>
+        <aside class="transcript">
+          <div class="transcript-head">SQUAD COMMS <span>LIVE</span></div>
+          <div id="transcript-lines" class="transcript-lines"></div>
+          <div class="vote-readout"><span id="vote-readout">0 / 5 VOTES LOCKED</span><i><b id="vote-readout-bar"></b></i></div>
+        </aside>
+      </div>
+
+      <footer class="meeting-foot">
+        <button id="btn-skip" class="btn btn-ghost btn-small">SKIP VOTE</button>
+        <button id="btn-vote" class="btn btn-primary btn-small" disabled>LOCK VOTE</button>
+      </footer>
+    </div>
+    <div id="meeting-result" class="meeting-result hidden"></div>
+  </section>
+
+  <!-- ================= END ================= -->
+  <section id="end-screen" class="screen modal-screen hidden" aria-modal="true" role="dialog">
+    <div class="end-shell">
+      <div id="end-badge" class="end-badge">CREW VICTORY</div>
+      <h2 id="end-title">DEFUSAL COMPLETE</h2>
+      <p id="end-reason">The traitor was exposed.</p>
+      <div class="end-reveal">
+        <div class="end-reveal-label">THE TRAITOR WAS</div>
+        <div id="end-impostor" class="end-impostor">VIPER</div>
+      </div>
+      <div id="end-stats" class="end-stats"></div>
+      <div class="end-actions">
+        <button id="btn-again" class="btn btn-primary btn-small">PLAY AGAIN</button>
+        <button id="btn-menu" class="btn btn-ghost btn-small">MAIN MENU</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- ================= PAUSE ================= -->
+  <section id="pause" class="screen modal-screen hidden" aria-modal="true" role="dialog">
+    <div class="pause-shell">
+      <div class="meeting-kicker"><span class="pulse-dot"></span>TACTICAL PAUSE</div>
+      <h2>HOLD POSITION</h2>
+      <div class="pause-rows">
+        <button id="pause-tilt" class="menu-row"><span>TILT AIM</span><b>OFF</b></button>
+        <button id="pause-sound" class="menu-row"><span>AUDIO</span><b>ON</b></button>
+        <button id="pause-resume" class="menu-row"><span>RESUME</span><b>ESC</b></button>
+        <button id="pause-quit" class="menu-row danger"><span>ABANDON ROUND</span><b>↩</b></button>
+      </div>
+      <p class="pause-note">On iOS, enabling tilt asks for motion permission. Aim with small wrist movements; use RECENTER if the view drifts.</p>
+    </div>
+  </section>
+
+  <!-- ================= HOWTO ================= -->
+  <section id="howto" class="screen modal-screen hidden" aria-modal="true" role="dialog">
+    <div class="howto-shell">
+      <div class="meeting-kicker"><span class="pulse-dot"></span>FIELD MANUAL</div>
+      <h2>HOW TO SURVIVE</h2>
+      <div class="howto-grid">
+        <article><b>01 / DEFUSE</b><p>Complete all six defusal tasks. Follow the amber markers and use the consoles.</p></article>
+        <article><b>02 / WATCH</b><p>One operator is a traitor. They kill quietly. Bodies and vents are evidence.</p></article>
+        <article><b>03 / VOTE</b><p>Report a body or call one emergency meeting. Read the comms, then vote.</p></article>
+        <article><b>04 / FIRE</b><p>Your sidearm kills in one shot — but shooting a crewmate loses the round. Only fire on proof.</p></article>
+      </div>
+      <div class="howto-controls">
+        <div><b>TOUCH</b><span>Left stick moves. Drag to look. FIRE / USE / REPORT buttons.</span></div>
+        <div><b>TILT</b><span>Optional gyro aim. Enable it on the start screen or in pause; iOS will ask permission.</span></div>
+        <div><b>DESKTOP</b><span>WASD, mouse aim, click to fire, R reload, E use, F report.</span></div>
+      </div>
+      <button id="btn-howto-close" class="btn btn-primary btn-small">CLOSE</button>
+    </div>
+  </section>
+
+  <div id="rotate-hint" class="rotate-hint hidden"><span>↻</span> ROTATE FOR A WIDER VIEW</div>
+  <div id="loading" class="loading"><div class="loading-bar"><i></i></div><span>BUILDING DUST PROTOCOL</span></div>
+
+  <script type="module" src="/src/main.js"></script>
+</body>
+</html>
