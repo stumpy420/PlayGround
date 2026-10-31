@@ -42,12 +42,22 @@ In the OMGithub playground, `./start.sh` serves the same static site.
 | `W` `A` `S` `D` | Move |
 | `Shift` | Sprint (drains stamina) |
 | `Space` | Jump |
-| `Left mouse` | Fire (full-auto) |
+| `Left mouse` | Fire (full-auto / pump) |
 | `Right mouse` | Aim down sights |
+| `1` `2` `3` | Equip VK-7 rifle, VX-4 SMG, or C-9 shotgun |
+| `Q` | Cycle weapons |
 | `R` | Reload |
 | `E` | Interact / mine / call lift |
 | `Esc` | Pause |
 | `Touch` | On-screen stick, fire, reload and use buttons |
+
+### Loadout
+
+- **VK-7 "Scrapper"** — 30-round assault rifle, balanced damage and recoil.
+- **VX-4 "Hornet"** — 36-round SMG, fast fire rate, wider spread.
+- **C-9 "Cinder"** — 6-shell pump shotgun, eight-pellet spread and heavy recoil.
+
+Each weapon tracks its own magazine and reserve ammo, and aims down its own sights/optic.
 
 ### Economy note
 

@@ -86,7 +86,12 @@
     </div>
 
     <div class="ammo">
-      <span class="weapon-name">VK-7 "SCRAPPER"</span>
+      <div class="weapon-slots" id="weapon-slots">
+        <span data-weapon="0" class="active">1 VK-7</span>
+        <span data-weapon="1">2 VX-4</span>
+        <span data-weapon="2">3 C-9</span>
+      </div>
+      <span class="weapon-name" id="weapon-name">VK-7 "SCRAPPER"</span>
       <div class="ammo-count"><b id="ammo-mag">30</b><span>/ <i id="ammo-reserve">150</i></span></div>
       <div class="ammo-state" id="ammo-state">BALLISTIC // AUTO</div>
     </div>
@@ -102,7 +107,9 @@
     </div>
     <div class="touch-actions">
       <button class="touch-btn small" data-touch="reload">RELOAD</button>
+      <button class="touch-btn small" data-touch="swap">SWAP</button>
       <button class="touch-btn small" data-touch="interact">USE</button>
+      <button class="touch-btn small" data-touch="aim">AIM</button>
       <button class="touch-btn fire" data-touch="fire">FIRE</button>
     </div>
   </div>
@@ -159,6 +166,8 @@
         <span><kbd>LMB</kbd> fire</span>
         <span><kbd>RMB</kbd> aim</span>
         <span><kbd>R</kbd> reload</span>
+        <span><kbd>1</kbd><kbd>2</kbd><kbd>3</kbd> weapons</span>
+        <span><kbd>Q</kbd> swap</span>
         <span><kbd>E</kbd> interact</span>
         <span><kbd>ESC</kbd> pause</span>
       </div>
@@ -180,6 +189,8 @@
         <p><kbd>WASD</kbd> to move, <kbd>SHIFT</kbd> to sprint, <kbd>SPACE</kbd> to jump. Sprinting drains stamina; it regenerates when you slow down.</p>
         <h3>Gunplay</h3>
         <p>Hold <kbd>LMB</kbd> for full-auto. Tap <kbd>RMB</kbd> to aim and tighten spread. Recoil climbs — pull down and pace your bursts. <kbd>R</kbd> reloads.</p>
+        <h3>Loadout</h3>
+        <p><kbd>1</kbd> VK-7 rifle, <kbd>2</kbd> VX-4 SMG, <kbd>3</kbd> C-9 shotgun. Press <kbd>Q</kbd> to cycle. Each gun keeps its own magazine and reserve ammo.</p>
       </div>
       <div>
         <h3>Loot &amp; cargo</h3>
