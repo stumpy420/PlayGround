@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1, user-scalable=no" />
+  <meta name="theme-color" content="#080b0c" />
+  <meta name="description" content="Bellingham: The Underground — an original first-person open-world life simulator and arcade fighting game." />
+  <title>BELLINGHAM: THE UNDERGROUND</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <canvas id="game" aria-label="Bellingham 3D game world"></canvas>
+  <div id="weather-glass" aria-hidden="true"></div>
+  <div id="grain" aria-hidden="true"></div>
+  <div id="vignette" aria-hidden="true"></div>
+  <div id="glitch" aria-hidden="true"></div>
+
+  <div id="boot" class="screen">
+    <div class="boot-mark">B//U</div>
+    <div class="boot-line"><span></span></div>
+    <p id="boot-text">READING THE RAIN...</p>
+  </div>
+
+  <section id="menu" class="screen hidden" aria-label="Main menu">
+    <div class="menu-shade"></div>
+    <header class="menu-top">
+      <div class="menu-stamp"><b>18+</b><span>MATURE CONTENT<br>FICTIONAL BELLINGHAM</span></div>
+      <div class="menu-weather"><span id="menu-temp">41°F</span> / RAIN / 07:42</div>
+    </header>
+    <div class="menu-hero">
+      <p class="eyebrow">AN OPEN-WORLD FIGHTING LIFE SIM</p>
+      <h1>BELLINGHAM</h1>
+      <h2>THE <i>UNDERGROUND</i></h2>
+      <p class="menu-deck">Clock in. Pay rent. Fall in love. Try not to notice the city breathing back.<br>Every stranger is a fighter. Every night is a round.</p>
+      <div class="menu-actions">
+        <button id="btn-start" class="btn btn-primary" disabled>START</button>
+        <button id="btn-continue" class="btn hidden">CONTINUE</button>
+        <button id="btn-menu-settings" class="btn btn-ghost">SETTINGS</button>
+      </div>
+      <p class="content-note">18+ · Adult relationships are consensual and non-graphic. Contains violence, crime, alcohol, drug themes, profanity and psychological horror. All characters are adults. This is a work of fiction.</p>
+    </div>
+    <footer class="menu-footer">
+      <span>ORIGINAL WORLD · ORIGINAL CHARACTERS · ORIGINAL SOUND</span>
+      <span>PUGET SOUND / WHATCOM COUNTY</span>
+    </footer>
+    <div class="menu-side">NO SIGNAL <span>▮▮▮</span></div>
+  </section>
+
+  <main id="hud" class="hidden" aria-label="Game HUD">
+    <div class="hud-brand">
+      <span class="hud-logo">B<i>//</i>U</span>
+      <span class="hud-location" id="hud-location">DOWNTOWN</span>
+    </div>
+
+    <div class="hud-left">
+      <div class="quest-card" id="quest-card">
+        <div class="quest-kicker"><span id="quest-chapter">CHAPTER 01</span><span id="quest-dist">0 m</span></div>
+        <div class="quest-title" id="quest-title">A Normal Life</div>
+        <div class="quest-objective" id="quest-objective">Clock in at The Steam Kettle.</div>
+        <div class="quest-bar"><span id="quest-progress"></span></div>
+      </div>
+      <div class="need-stack" id="need-stack">
+        <div class="need" data-need="hunger"><span class="need-icon">◒</span><div><b>HUNGER</b><i><em id="need-hunger"></em></i></div></div>
+        <div class="need" data-need="energy"><span class="need-icon">ϟ</span><div><b>ENERGY</b><i><em id="need-energy"></em></i></div></div>
+        <div class="need" data-need="hygiene"><span class="need-icon">◌</span><div><b>HYGIENE</b><i><em id="need-hygiene"></em></i></div></div>
+        <div class="need" data-need="mood"><span class="need-icon">✦</span><div><b>MOOD</b><i><em id="need-mood"></em></i></div></div>
+      </div>
+    </div>
+
+    <div class="hud-right">
+      <div class="clock-block">
+        <div class="clock-time" id="clock-time">07:42</div>
+        <div class="clock-day" id="clock-day">MON · DAY 1</div>
+        <div class="weather-line"><span id="weather-icon">☂</span><span id="weather-label">LIGHT RAIN</span><span id="temp-label">41°</span></div>
+      </div>
+      <div class="minimap-wrap">
+        <canvas id="minimap" width="184" height="184"></canvas>
+        <div class="minimap-ring"></div>
+        <div class="minimap-n">N</div>
+        <div class="minimap-tag" id="minimap-tag">DOWNTOWN</div>
+      </div>
+      <div class="wallet-block">
+        <span class="wallet-label">WALLET</span>
+        <b id="wallet">$1,284</b>
+        <span id="rep-label">UNKNOWN</span>
+      </div>
+    </div>
+
+    <div class="crosshair" id="crosshair"><span></span><span></span><span></span><span></span><i></i></div>
+    <div id="interact-prompt" class="interact-prompt hidden"><kbd>E</kbd><span id="interact-text">Talk</span></div>
+    <div id="look-hint" class="look-hint">CLICK TO LOOK · WASD TO MOVE</div>
+
+    <div class="hud-bottom">
+      <div class="control-rail">
+        <span><kbd>WASD</kbd> MOVE</span>
+        <span><kbd>SHIFT</kbd> SPRINT</span>
+        <span><kbd>E</kbd> INTERACT</span>
+        <span><kbd>TAB</kbd> PHONE</span>
+        <span><kbd>M</kbd> MAP</span>
+      </div>
+      <div class="style-chip" id="style-chip">STYLE // STREET</div>
+    </div>
+
+    <div id="toasts" class="toasts" aria-live="polite"></div>
+    <div id="area-title" class="area-title"><span></span><b></b><i></i></div>
+    <div id="subtitle" class="subtitle hidden"></div>
+    <div id="event-banner" class="event-banner hidden"><span>UNSCHEDULED EVENT</span><b></b><i></i></div>
+    <div id="weirdness" class="weirdness"><span>THE CITY IS LOOKING</span><i></i></div>
+  </main>
+
+  <section id="combat-hud" class="hidden" aria-label="Combat HUD">
+    <div class="fight-top">
+      <div class="fighter-tag player-tag"><span>YOU</span><b id="fight-player-name">ROOKIE</b></div>
+      <div class="round-mark"><span id="fight-round">ROUND ONE</span><i>THE UNDERCURRENT</i></div>
+      <div class="fighter-tag enemy-tag"><span id="fight-enemy-sub">UNKNOWN</span><b id="fight-enemy-name">THE BARISTA</b></div>
+    </div>
+    <div class="fight-bars">
+      <div class="fight-bar player"><i id="fight-player-health"></i><em id="fight-player-stamina"></em></div>
+      <div class="fight-bar enemy"><i id="fight-enemy-health"></i></div>
+    </div>
+    <div class="special-wrap">
+      <div class="special-meter"><span id="special-fill"></span><b id="special-label">SPECIAL</b></div>
+      <div class="combo-counter hidden" id="combo-counter"><b>0</b><span>HIT COMBO</span></div>
+    </div>
+    <div class="fight-controls">
+      <span><kbd>LMB</kbd>/<kbd>J</kbd> PUNCH</span>
+      <span><kbd>RMB</kbd>/<kbd>K</kbd> KICK</span>
+      <span><kbd>Q</kbd> BLOCK</span>
+      <span><kbd>SPACE</kbd> DODGE</span>
+      <span><kbd>E</kbd> GRAPPLE</span>
+      <span><kbd>R</kbd> SPECIAL</span>
+      <span><kbd>F</kbd> ENV</span>
+    </div>
+    <div id="fight-callout" class="fight-callout hidden"></div>
+    <div id="finisher" class="finisher hidden"><span>FINISH</span><kbd>C</kbd></div>
+    <div id="hit-vignette" class="hit-vignette"></div>
+  </section>
+
+  <section id="dialogue" class="dialogue hidden" aria-live="polite">
+    <div class="dialogue-portrait" id="dialogue-portrait"><span></span></div>
+    <div class="dialogue-body">
+      <div class="dialogue-meta"><b id="dialogue-name">MARA VOSS</b><span id="dialogue-role">BARISTA · 25</span></div>
+      <p id="dialogue-text"></p>
+      <div id="dialogue-choices" class="dialogue-choices"></div>
+    </div>
+    <button class="dialogue-close" id="dialogue-close" aria-label="Close dialogue">ESC</button>
+  </section>
+
+  <section id="panel" class="panel hidden" aria-label="Game panel">
+    <div class="panel-head">
+      <div><span id="panel-kicker">PHONE</span><h2 id="panel-title">Your Phone</h2></div>
+      <button id="panel-close" class="panel-close" aria-label="Close panel">CLOSE <kbd>ESC</kbd></button>
+    </div>
+    <div id="panel-tabs" class="panel-tabs"></div>
+    <div id="panel-body" class="panel-body"></div>
+  </section>
+
+  <section id="map-overlay" class="map-overlay hidden" aria-label="City map">
+    <div class="map-head"><div><span>WHATCOM COUNTY / 48.75° N</span><h2>BELLINGHAM</h2></div><button id="map-close">CLOSE <kbd>M</kbd></button></div>
+    <div class="map-canvas-wrap"><canvas id="bigmap" width="1200" height="900"></canvas><div class="map-legend"><span><i class="dot you"></i>YOU</span><span><i class="dot quest"></i>OBJECTIVE</span><span><i class="dot biz"></i>BUSINESS</span><span><i class="dot arena"></i>UNDERCURRENT</span></div></div>
+    <div class="map-foot"><span>CLICK MAP TO SET A PERSONAL WAYPOINT</span><span id="map-coords">RAILROAD AVE / 07:42</span></div>
+  </section>
+
+  <section id="settings" class="settings hidden" aria-label="Settings">
+    <div class="settings-card">
+      <span class="eyebrow">SYSTEM</span>
+      <h2>SETTINGS</h2>
+      <label>MOUSE SENSITIVITY <input id="set-sens" type="range" min="0.4" max="2.4" step="0.1" value="1"></label>
+      <label>MASTER VOLUME <input id="set-volume" type="range" min="0" max="1" step="0.05" value="0.55"></label>
+      <label class="toggle-row">INVERT LOOK <input id="set-invert" type="checkbox"></label>
+      <label class="toggle-row">REDUCED MOTION <input id="set-motion" type="checkbox"></label>
+      <div class="settings-actions">
+        <button id="set-resume" class="btn btn-primary">RESUME</button>
+        <button id="set-reset" class="btn btn-ghost">RESET SAVE</button>
+      </div>
+      <p class="settings-note">This build contains stylized violence, alcohol and drug themes, adult language, and consensual non-graphic intimacy. You can pause at any time with ESC.</p>
+    </div>
+  </section>
+
+  <section id="pause" class="pause hidden" aria-label="Paused">
+    <div>
+      <span class="eyebrow">THE RAIN KEEPS FALLING</span>
+      <h2>PAUSED</h2>
+      <button id="pause-resume" class="btn btn-primary">RESUME</button>
+      <button id="pause-settings" class="btn btn-ghost">SETTINGS</button>
+      <button id="pause-menu" class="btn btn-ghost">SAVE &amp; QUIT</button>
+    </div>
+  </section>
+
+  <section id="touch" class="touch hidden" aria-label="Touch controls">
+    <div id="touch-stick" class="touch-stick"><i></i></div>
+    <div id="touch-look" class="touch-look"></div>
+    <div class="touch-actions">
+      <button data-touch="interact" class="t-act">E</button>
+      <button data-touch="jump" class="t-act small">↑</button>
+      <button data-touch="phone" class="t-act small">▤</button>
+      <button data-touch="sprint" class="t-act small">»</button>
+    </div>
+    <div class="touch-fight hidden" id="touch-fight">
+      <button data-touch="punch">PUNCH</button>
+      <button data-touch="kick">KICK</button>
+      <button data-touch="block">BLOCK</button>
+      <button data-touch="dodge">DODGE</button>
+      <button data-touch="special">SPECIAL</button>
+    </div>
+  </section>
+
+  <div id="fade" class="fade"></div>
+  <div id="cinema" class="cinema hidden"><span id="cinema-top"></span><b id="cinema-main"></b><i id="cinema-sub"></i></div>
+  <div id="modal" class="modal hidden"><div class="modal-card"><span id="modal-kicker"></span><h2 id="modal-title"></h2><div id="modal-body"></div><div id="modal-actions"></div></div></div>
+
+  <script type="module" src="src/main.js"></script>
+</body>
+</html>
