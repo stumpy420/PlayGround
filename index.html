@@ -1,0 +1,236 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<meta name="theme-color" content="#0b0908">
+<title>AETHELGARD // Ether-Core Extraction</title>
+<meta name="description" content="A first-person extraction shooter slice. Drop into the badlands, scavenge Ether-Core, fight rogue drones and bank your haul before the storm takes it.">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' fill='%230b0908'/><path d='M50 12 82 84H63L50 48 37 84H18Z' fill='%23ffb057'/></svg>">
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+<canvas id="game" aria-label="Aethelgard game viewport"></canvas>
+
+<div id="hud" class="hidden">
+  <div class="hud-scanlines"></div>
+
+  <header class="hud-top">
+    <div class="brand">
+      <span class="brand-mark">A</span>
+      <div class="brand-text">
+        <strong>AETHELGARD</strong>
+        <small>ETHERCORE EXTRACTION</small>
+      </div>
+    </div>
+
+    <div class="storm" id="storm">
+      <span class="storm-label" id="storm-label">ATMOSPHERE</span>
+      <div class="storm-bar"><i id="storm-fill"></i></div>
+      <span class="storm-text" id="storm-text">CLEAR</span>
+    </div>
+
+    <div class="wallet">
+      <div class="wallet-row"><span class="cur scrap">SCRAP</span><b id="wallet-scrap">0</b></div>
+      <div class="wallet-row"><span class="cur aether">$AETHER</span><b id="wallet-aether">0.00</b></div>
+      <button id="mute-btn" class="icon-btn" aria-label="Toggle sound" title="Toggle sound">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9v6h4l5 4V5L8 9H4zm12.5 3a4.5 4.5 0 0 0-2.5-4v8a4.5 4.5 0 0 0 2.5-4z"/></svg>
+      </button>
+    </div>
+  </header>
+
+  <div class="objective" id="objective">
+    <span class="objective-tag">OBJECTIVE</span>
+    <span id="objective-text">Reach Lift 04 and extract</span>
+  </div>
+
+  <div class="crosshair" id="crosshair"><i></i><i></i><i></i><i></i></div>
+  <div class="hitmarker" id="hitmarker"><i></i><i></i><i></i><i></i></div>
+
+  <div class="markers" id="markers"></div>
+  <div class="toasts" id="toasts"></div>
+
+  <div class="prompt hidden" id="prompt">
+    <kbd>E</kbd><span id="prompt-text">Interact</span>
+    <div class="prompt-progress"><i id="prompt-fill"></i></div>
+  </div>
+
+  <div class="extract-panel hidden" id="extract-panel">
+    <span class="extract-kicker">LIFT 04 // ASCENT SEQUENCE</span>
+    <strong id="extract-count">12</strong>
+    <span class="extract-sub">HOLD THE PAD — CARGO SECURED ON ASCENT</span>
+    <div class="extract-bar"><i id="extract-fill"></i></div>
+  </div>
+
+  <footer class="hud-bottom">
+    <div class="vitals">
+      <div class="vital-row">
+        <span class="vital-label">INTEGRITY</span>
+        <div class="bar health"><i id="health-fill"></i></div>
+        <b id="health-text">100</b>
+      </div>
+      <div class="vital-row">
+        <span class="vital-label">STAMINA</span>
+        <div class="bar stamina"><i id="stamina-fill"></i></div>
+        <b id="stamina-text">100</b>
+      </div>
+    </div>
+
+    <div class="cargo" id="cargo">
+      <span class="cargo-label">CARGO</span>
+      <div class="cargo-main">
+        <span class="cargo-cores"><i class="gem"></i><b id="cargo-cores">0</b> CORES</span>
+        <span class="cargo-scrap"><b id="cargo-scrap">0</b> SCRAP</span>
+      </div>
+      <div class="cargo-mass"><i id="cargo-fill"></i><span id="cargo-text">0 / 24 KG</span></div>
+    </div>
+
+    <div class="ammo">
+      <span class="weapon-name">VK-7 "SCRAPPER"</span>
+      <div class="ammo-count"><b id="ammo-mag">30</b><span>/ <i id="ammo-reserve">150</i></span></div>
+      <div class="ammo-state" id="ammo-state">BALLISTIC // AUTO</div>
+    </div>
+  </footer>
+
+  <div class="vignette" id="damage-vignette"></div>
+  <div class="storm-vignette" id="storm-vignette"></div>
+  <div class="low-health" id="low-health"></div>
+
+  <div id="touch-ui" class="hidden">
+    <div class="stick-zone" id="stick-zone">
+      <div class="stick-base"><div class="stick-knob" id="stick-knob"></div></div>
+    </div>
+    <div class="touch-actions">
+      <button class="touch-btn small" data-touch="reload">RELOAD</button>
+      <button class="touch-btn small" data-touch="interact">USE</button>
+      <button class="touch-btn fire" data-touch="fire">FIRE</button>
+    </div>
+  </div>
+</div>
+
+<!-- ============ START ============ -->
+<section id="start-screen" class="screen start">
+  <div class="start-shade"></div>
+  <div class="start-grid">
+    <div class="start-copy">
+      <span class="eyebrow"><i class="pulse-dot"></i> SECTOR 7 // BADLANDS // LIVE</span>
+      <h1 class="wordmark">AETHEL<span>GARD</span></h1>
+      <p class="tagline">Ether-Core extraction is a one-way trip until you make it back.</p>
+      <p class="lede">
+        You are a Free-Scrapper in the wake of the Corefall. Cross the badlands, cut Ether-Core
+        from the glass, and put down anything that wants it more than you do. Bank it at
+        <b>Lift 04</b>. Die out there and the wasteland keeps your cargo.
+      </p>
+
+      <div class="start-actions">
+        <button id="start-btn" class="btn primary">Start</button>
+        <button id="help-btn" class="btn ghost">How to play</button>
+      </div>
+
+      <div class="wallet-strip">
+        <div><span>SCRAP</span><b id="start-scrap">0</b></div>
+        <div><span>$AETHER</span><b id="start-aether">0.00</b></div>
+        <div><span>DEPLOYMENTS</span><b id="start-runs">0</b></div>
+        <div><span>BEST HAUL</span><b id="start-best">0.00</b></div>
+      </div>
+
+      <p class="disclaimer">Prototype slice · simulated economy · no wallet or token required</p>
+    </div>
+
+    <aside class="brief">
+      <header>
+        <span class="brief-tag">DROP BRIEF</span>
+        <span class="brief-code">AG-07 / LIFT 04</span>
+      </header>
+      <ol class="brief-list">
+        <li><span class="num">01</span><div><b>Scavenge</b><p>Crack supply crates and mine glowing Ether-Core nodes for the good stuff.</p></div></li>
+        <li><span class="num">02</span><div><b>Engage</b><p>Rogue AI drones patrol the refinery. Two bursts put a scout down.</p></div></li>
+        <li><span class="num">03</span><div><b>Survive</b><p>Ether-storms roll through and cut visibility. Watch the atmosphere bar.</p></div></li>
+        <li><span class="num">04</span><div><b>Extract</b><p>Call Lift 04 and hold the pad for twelve seconds. Cargo is banked on ascent.</p></div></li>
+      </ol>
+      <div class="brief-meta">
+        <div><span>MAP</span><b>64 km² <i>(1:1 slice)</i></b></div>
+        <div><span>THREAT</span><b class="danger">ROGUE AI // PvEvP</b></div>
+      </div>
+      <div class="controls">
+        <span><kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd> move</span>
+        <span><kbd>SHIFT</kbd> sprint</span>
+        <span><kbd>SPACE</kbd> jump</span>
+        <span><kbd>LMB</kbd> fire</span>
+        <span><kbd>RMB</kbd> aim</span>
+        <span><kbd>R</kbd> reload</span>
+        <span><kbd>E</kbd> interact</span>
+        <span><kbd>ESC</kbd> pause</span>
+      </div>
+    </aside>
+  </div>
+</section>
+
+<!-- ============ HELP ============ -->
+<section id="help-screen" class="screen modal hidden">
+  <div class="modal-card">
+    <header class="modal-head">
+      <span class="eyebrow">FIELD MANUAL</span>
+      <button class="icon-btn close" id="help-close" aria-label="Close">✕</button>
+    </header>
+    <h2>Stay alive. Get paid.</h2>
+    <div class="manual-grid">
+      <div>
+        <h3>Movement</h3>
+        <p><kbd>WASD</kbd> to move, <kbd>SHIFT</kbd> to sprint, <kbd>SPACE</kbd> to jump. Sprinting drains stamina; it regenerates when you slow down.</p>
+        <h3>Gunplay</h3>
+        <p>Hold <kbd>LMB</kbd> for full-auto. Tap <kbd>RMB</kbd> to aim and tighten spread. Recoil climbs — pull down and pace your bursts. <kbd>R</kbd> reloads.</p>
+      </div>
+      <div>
+        <h3>Loot &amp; cargo</h3>
+        <p>Walk over scrap and stims to collect them. Mine cyan Ether-Core nodes and crack crates with <kbd>E</kbd>. You can carry 24 kg; cores weigh 3 kg each.</p>
+        <h3>Extraction</h3>
+        <p>Lift 04 sits northeast of the refinery. Hold <kbd>E</kbd> on the pad to call it, then stay close for twelve seconds. Any hit taken during ascent does not stop the lift.</p>
+      </div>
+      <div>
+        <h3>Death</h3>
+        <p>If integrity hits zero, your cargo is gone and the run ends. You respawn at Sanctuary 7 with nothing but your rifle.</p>
+        <h3>Economy</h3>
+        <p>Scrap is the soft currency for repairs and ammo. $AETHER is the on-chain utility token; in this slice, each extracted core pays out 25 AETHER into your local wallet.</p>
+      </div>
+    </div>
+    <button class="btn primary" id="help-done">Back</button>
+  </div>
+</section>
+
+<!-- ============ PAUSE ============ -->
+<section id="pause-screen" class="screen modal hidden">
+  <div class="modal-card narrow">
+    <span class="eyebrow">RUN SUSPENDED</span>
+    <h2>Holding position</h2>
+    <p class="modal-note">The wasteland waits. Your cargo is still on you — and still at risk.</p>
+    <div class="modal-actions">
+      <button class="btn primary" id="resume-btn">Resume</button>
+      <button class="btn ghost" id="pause-help-btn">Field manual</button>
+      <button class="btn danger" id="abandon-btn">Abandon run</button>
+    </div>
+    <p class="modal-note tiny">Abandoning drops your cargo and returns you to Sanctuary 7.</p>
+  </div>
+</section>
+
+<!-- ============ END ============ -->
+<section id="end-screen" class="screen modal hidden">
+  <div class="modal-card end-card">
+    <span class="eyebrow" id="end-kicker">RUN COMPLETE</span>
+    <h2 id="end-title">Cargo secured</h2>
+    <p class="modal-note" id="end-note">Lift 04 broke atmosphere with your haul intact.</p>
+    <div class="end-stats">
+      <div><span>SCRAP BANKED</span><b id="end-scrap">0</b></div>
+      <div><span>CORES</span><b id="end-cores">0</b></div>
+      <div><span>$AETHER</span><b id="end-aether">0.00</b></div>
+    </div>
+    <div class="end-total"><span>RUN VALUE</span><b id="end-total">0.00</b></div>
+    <button class="btn primary" id="redeploy-btn">Redeploy</button>
+  </div>
+</section>
+
+<div id="fatal" class="fatal hidden"><b>WebGL unavailable</b><span>This slice needs a browser with WebGL 2 enabled.</span></div>
+
+<script type="module" src="js/main.js"></script>
+</body>
+</html>

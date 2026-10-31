@@ -16,3 +16,42 @@
 - 👤 [Explore the creator's projects](https://omgithub.com/stumpy420).
 - 🌍 [Create with OMGithub](https://omgithub.com).
 <!-- omgithub:readme:end -->
+
+## AETHELGARD // Ether-Core Extraction
+
+A playable first-person extraction slice set in the badlands of Aethelgard. Cross the dunes,
+crack supply caches, mine glowing Ether-Core, put down rogue drones, and hold Lift 04 long
+enough to bank your haul. Die — or abandon the run — and the wasteland keeps the cargo.
+
+This is a self-contained Three.js prototype with no build step and no runtime network calls.
+
+### Run it
+
+```bash
+# from this directory, using any static file server
+python3 -m http.server 3002
+# then open http://localhost:3002
+```
+
+In the OMGithub playground, `./start.sh` serves the same static site.
+
+### Controls
+
+| Input | Action |
+| --- | --- |
+| `W` `A` `S` `D` | Move |
+| `Shift` | Sprint (drains stamina) |
+| `Space` | Jump |
+| `Left mouse` | Fire (full-auto) |
+| `Right mouse` | Aim down sights |
+| `R` | Reload |
+| `E` | Interact / mine / call lift |
+| `Esc` | Pause |
+| `Touch` | On-screen stick, fire, reload and use buttons |
+
+### Economy note
+
+The economy is **simulated for the prototype**. Extracted Scrap and $AETHER are written to a
+local wallet in `localStorage` under `aethelgard.wallet.v1`; there is no wallet connection,
+token, or blockchain transaction. One Ether-Core pays out 25 $AETHER on a successful ascent.
+
