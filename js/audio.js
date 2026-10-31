@@ -96,7 +96,20 @@ export class Audio {
     s.stop(t + dur + 0.02);
   }
 
-  shot() {
+  shot(kind = 'rifle') {
+    if (kind === 'shotgun') {
+      this.noise(0.22, 1800, 0.46);
+      this.tone(78, 0.26, 'sine', 0.42, 34);
+      this.tone(620, 0.08, 'square', 0.07, 140);
+      this.noise(0.12, 900, 0.14, 'lowpass', 0.26);
+      return;
+    }
+    if (kind === 'smg') {
+      this.noise(0.07, 4200, 0.22);
+      this.tone(210, 0.09, 'sine', 0.2, 62);
+      this.tone(1450, 0.035, 'square', 0.035, 420);
+      return;
+    }
     this.noise(0.11, 3200, 0.3);
     this.tone(160, 0.14, 'sine', 0.3, 42);
     this.tone(1100, 0.05, 'square', 0.045, 300);

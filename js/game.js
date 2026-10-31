@@ -105,7 +105,7 @@ export class Game {
     this.interactHeld = false;
     this.dragging = false;
     this.locked = false;
-    this.touch = { forward: 0, strafe: 0, fire: false, interact: false };
+    this.touch = { forward: 0, strafe: 0, fire: false, interact: false, ads: false };
 
     this.ui.setWallet(this.wallet);
     this.bindInput();
@@ -139,6 +139,10 @@ export class Game {
       if (['Space', 'KeyW', 'KeyA', 'KeyS', 'KeyD', 'Tab'].includes(k)) e.preventDefault();
       this.keys.add(k);
       if (k === 'KeyR' && this.state === 'playing') this.player.reload();
+      if (this.state === 'playing' && (k === 'Digit1' || k === 'Digit2' || k === 'Digit3')) {
+        this.player.switchWeapon(Number(k.slice(-1)) - 1);
+      }
+      if (k === 'KeyQ' && this.state === 'playing') this.player.cycleWeapon();
       if (k === 'Escape') {
         if (this.state === 'playing') this.pause();
         else if (this.state === 'paused') this.resume();
@@ -269,11 +273,20 @@ export class Game {
         if (action === 'fire') this.touch.fire = true;
         if (action === 'interact') this.touch.interact = true;
         if (action === 'reload') this.player.reload();
+        if (action === 'swap') this.player.cycleWeapon();
+        if (action === 'aim') {
+          this.touch.ads = true;
+          btn.classList.add('active');
+        }
       });
       const release = (e) => {
         e.preventDefault();
         if (action === 'fire') this.touch.fire = false;
         if (action === 'interact') this.touch.interact = false;
+        if (action === 'aim') {
+          this.touch.ads = false;
+          btn.classList.remove('active');
+        }
       };
       btn.addEventListener('pointerup', release);
       btn.addEventListener('pointercancel', release);
@@ -457,7 +470,7 @@ export class Game {
     input.sprint = this.keys.has('ShiftLeft') || this.keys.has('ShiftRight');
     input.jump = this.keys.has('Space');
     input.fire = this.firing || this.touch.fire;
-    input.ads = this.ads;
+    input.ads = this.ads || this.touch.ads;
     input.interact = this.interactHeld || this.touch.interact;
 
     this.player.update(dt, input, this.world.colliders);
@@ -526,7 +539,7 @@ export class Game {
   updateHUD() {
     const p = this.player;
     this.ui.setVitals(p.health, p.stamina);
-    this.ui.setAmmo(p.mag, p.reserve, p.reloadT > 0);
+    this.ui.setAmmo(p.mag, p.reserve, p.reloadT > 0, p.weapon);
     this.ui.setCargo(this.run.scrap, this.run.cores, this.run.mass, CARGO_MAX);
     this.ui.setCrosshair(clamp(p.currentSpread() * 22, 0, 1));
     this.ui.setStorm(this.storm.active, this.storm.timer, !this.storm.active && this.storm.timer < 12);
@@ -564,7 +577,10 @@ export class Game {
   /* ---------------------------------------------------------------- */
   /* Combat                                                            */
   /* ---------------------------------------------------------------- */
-  fireHitscan(origin, dir) {
+  fireHitscan(origin, dir, opts = {}) {
+    const damage = opts.damage ?? 30;
+    const drawTracer = opts.tracer !== false;
+    const tracerColor = opts.color ?? 0xfff2cf;
     let enemyHit = null;
     let enemyDist = Infinity;
 
@@ -587,21 +603,21 @@ export class Game {
     if (hits.length) {
       const h = hits[0];
       this.effects.impact(h.point, 0xffc27a, 4);
-      this.effects.tracer(origin, h.point);
+      if (drawTracer) this.effects.tracer(origin, h.point, tracerColor);
       return;
     }
 
     if (enemyHit) {
       const point = origin.clone().addScaledVector(dir, enemyDist);
-      const killed = enemyHit.hit(30, this.ctx, point);
-      this.effects.tracer(origin, point, 0xfff2cf);
+      const killed = enemyHit.hit(damage, this.ctx, point);
+      if (drawTracer) this.effects.tracer(origin, point, tracerColor);
       this.ui.hitmarker(killed);
       this.audio.hit(killed);
       return;
     }
 
     const end = origin.clone().addScaledVector(dir, 150);
-    this.effects.tracer(origin, end);
+    if (drawTracer) this.effects.tracer(origin, end, tracerColor);
   }
 
   spawnBolt(origin, dir, opts) {

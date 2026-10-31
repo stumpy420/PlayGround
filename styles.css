@@ -409,7 +409,10 @@ button { font-family: inherit; }
 .cargo.full .cargo-mass i { background: var(--danger); }
 
 .ammo { justify-self: end; text-align: right; }
-.weapon-name { font-size: 9px; letter-spacing: .24em; color: var(--muted); display: block; }
+.weapon-slots { display: flex; justify-content: flex-end; gap: 7px; margin-bottom: 3px; }
+.weapon-slots span { font-size: 8px; letter-spacing: .16em; color: var(--muted); opacity: .42; text-shadow: 0 1px 4px rgba(0, 0, 0, .85); transition: color .15s, opacity .15s; }
+.weapon-slots span.active { color: var(--amber); opacity: 1; text-shadow: 0 0 10px rgba(255, 176, 87, .45), 0 1px 4px rgba(0, 0, 0, .85); }
+.weapon-name { font-size: 9px; letter-spacing: .24em; color: var(--muted); display: block; text-shadow: 0 1px 4px rgba(0, 0, 0, .85); }
 .ammo-count { display: flex; align-items: baseline; justify-content: flex-end; gap: 4px; line-height: 1; margin: 2px 0 3px; }
 .ammo-count b { font-family: var(--display); font-size: 40px; font-weight: 600; color: #fff5e7; text-shadow: 0 0 22px rgba(255, 176, 87, .22); }
 .ammo-count span { font-family: var(--display); font-size: 15px; color: var(--muted); }
@@ -478,6 +481,7 @@ button { font-family: inherit; }
 .touch-btn.fire { width: 84px; height: 84px; border-color: var(--amber); background: rgba(255, 138, 43, .18); }
 .touch-btn.small { width: 46px; height: 46px; font-size: 9px; color: #d8c9b8; border-color: var(--line); }
 .touch-btn:active { background: rgba(255, 176, 87, .3); }
+.touch-btn.active { background: rgba(255, 176, 87, .34); color: #fff3e4; border-color: var(--amber); }
 
 /* ============================================================
    SCREENS
@@ -734,7 +738,11 @@ button { font-family: inherit; }
   }
   .cargo-main { font-size: 10px; gap: 10px; margin: 1px 0 4px; }
   .cargo-main b { font-size: 13px; }
-  .ammo { position: absolute; right: 14px; bottom: 190px; }
+  .ammo {
+    position: absolute; right: 14px; bottom: 190px;
+    padding: 6px 8px 5px 26px;
+    background: linear-gradient(90deg, rgba(6, 5, 4, 0), rgba(6, 5, 4, .5) 45%, rgba(6, 5, 4, .62));
+  }
   .ammo-count b { font-size: 30px; }
   .weapon-name { font-size: 8px; }
   .ammo-state { font-size: 8px; }

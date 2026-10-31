@@ -26,6 +26,8 @@ export class UI {
       ammoReserve: $('ammo-reserve'),
       ammoState: $('ammo-state'),
       ammo: document.querySelector('.ammo'),
+      weaponName: $('weapon-name'),
+      weaponSlots: [...document.querySelectorAll('#weapon-slots [data-weapon]')],
       cargoCores: $('cargo-cores'),
       cargoScrap: $('cargo-scrap'),
       cargoFill: $('cargo-fill'),
@@ -62,6 +64,7 @@ export class UI {
     this.damageLevel = 0;
     this.toastCount = 0;
     this.lastPrompt = null;
+    this.lastWeaponId = null;
     this.markers = [];
 
     const defs = [
@@ -99,11 +102,28 @@ export class UI {
     this.el.lowHealth.style.opacity = hp < 32 ? String(0.25 + (1 - hp / 32) * 0.45) : '0';
   }
 
-  setAmmo(mag, reserve, reloading) {
+  setAmmo(mag, reserve, reloading, weapon) {
     this.el.ammoMag.textContent = mag;
     this.el.ammoReserve.textContent = reserve;
     this.el.ammo.classList.toggle('reloading', reloading);
     this.el.ammo.classList.toggle('empty', mag === 0 && !reloading);
+
+    if (weapon) {
+      if (weapon.id !== this.lastWeaponId) {
+        this.el.weaponName.textContent = weapon.name;
+        for (const slot of this.el.weaponSlots) {
+          slot.classList.toggle('active', Number(slot.dataset.weapon) === weapon.slot);
+        }
+        this.lastWeaponId = weapon.id;
+      }
+      this.el.ammoState.textContent = reloading
+        ? 'RELOADING'
+        : mag === 0
+          ? 'EMPTY // R'
+          : weapon.hud;
+      return;
+    }
+
     this.el.ammoState.textContent = reloading ? 'RELOADING' : mag === 0 ? 'EMPTY // R' : 'BALLISTIC // AUTO';
   }
 

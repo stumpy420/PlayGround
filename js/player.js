@@ -1,171 +1,9 @@
 import * as THREE from '../vendor/three.module.js';
 import { terrainHeight, clamp, damp, rand, lerp, HUB } from './util.js';
+import { WEAPON_DEFS } from './weapons.js';
 
 const UP = new THREE.Vector3(0, 1, 0);
-const MAG_SIZE = 30;
-const RELOAD_TIME = 1.85;
 const BASE_FOV = 74;
-const ADS_FOV = 52;
-
-// A tapered limb segment running from `from` to `to`. Used to connect the
-// viewmodel's gloves back to the player's sleeves so the rifle reads as held.
-function addLimb(group, from, to, rFrom, rTo, material) {
-  const dir = new THREE.Vector3().subVectors(to, from);
-  const len = dir.length();
-  const mesh = new THREE.Mesh(
-    new THREE.CylinderGeometry(rTo, rFrom, len, 8, 1),
-    material
-  );
-  mesh.position.copy(from).addScaledVector(dir, 0.5);
-  mesh.quaternion.setFromUnitVectors(UP, dir.normalize());
-  group.add(mesh);
-  return mesh;
-}
-
-function flashTexture() {
-  const c = document.createElement('canvas');
-  c.width = c.height = 128;
-  const ctx = c.getContext('2d');
-  const g = ctx.createRadialGradient(64, 64, 0, 64, 64, 64);
-  g.addColorStop(0, 'rgba(255,255,240,1)');
-  g.addColorStop(0.25, 'rgba(255,210,130,0.95)');
-  g.addColorStop(0.55, 'rgba(255,120,30,0.5)');
-  g.addColorStop(1, 'rgba(255,80,0,0)');
-  ctx.fillStyle = g;
-  ctx.fillRect(0, 0, 128, 128);
-  const tex = new THREE.CanvasTexture(c);
-  tex.colorSpace = THREE.SRGBColorSpace;
-  return tex;
-}
-
-function buildRifle() {
-  const group = new THREE.Group();
-
-  const gunmetal = new THREE.MeshStandardMaterial({ color: 0x383d44, roughness: 0.5, metalness: 0.3 });
-  const polymer = new THREE.MeshStandardMaterial({ color: 0x24262a, roughness: 0.8, metalness: 0.2 });
-  const accent = new THREE.MeshStandardMaterial({ color: 0xff8a2b, emissive: 0xb84a08, emissiveIntensity: 0.9, roughness: 0.4, metalness: 0.4 });
-  const glove = new THREE.MeshStandardMaterial({ color: 0x241f1b, roughness: 0.95 });
-  const knuckle = new THREE.MeshStandardMaterial({ color: 0x9a6533, roughness: 0.7, metalness: 0.2 });
-  const sleeve = new THREE.MeshStandardMaterial({ color: 0x45453c, roughness: 0.98, metalness: 0.02 });
-  const sleeveDark = new THREE.MeshStandardMaterial({ color: 0x2b2c27, roughness: 1 });
-  const cuff = new THREE.MeshStandardMaterial({ color: 0x6d5839, roughness: 0.85 });
-
-  const body = new THREE.Mesh(new THREE.BoxGeometry(0.095, 0.12, 0.5), gunmetal);
-  body.position.set(0, 0, -0.1);
-  group.add(body);
-
-  const upper = new THREE.Mesh(new THREE.BoxGeometry(0.07, 0.05, 0.44), polymer);
-  upper.position.set(0, 0.075, -0.13);
-  group.add(upper);
-
-  const rail = new THREE.Mesh(new THREE.BoxGeometry(0.035, 0.018, 0.4), gunmetal);
-  rail.position.set(0, 0.108, -0.14);
-  group.add(rail);
-
-  const handguard = new THREE.Mesh(new THREE.BoxGeometry(0.072, 0.075, 0.3), polymer);
-  handguard.position.set(0, 0.005, -0.44);
-  group.add(handguard);
-
-  for (let i = 0; i < 3; i++) {
-    const vent = new THREE.Mesh(new THREE.BoxGeometry(0.078, 0.012, 0.035), gunmetal);
-    vent.position.set(0, 0.03, -0.36 - i * 0.075);
-    group.add(vent);
-  }
-
-  const barrel = new THREE.Mesh(new THREE.CylinderGeometry(0.016, 0.018, 0.34, 10), gunmetal);
-  barrel.rotation.x = Math.PI / 2;
-  barrel.position.set(0, 0.015, -0.7);
-  group.add(barrel);
-
-  const brake = new THREE.Mesh(new THREE.BoxGeometry(0.05, 0.045, 0.09), gunmetal);
-  brake.position.set(0, 0.015, -0.87);
-  group.add(brake);
-
-  const mag = new THREE.Mesh(new THREE.BoxGeometry(0.052, 0.17, 0.095), polymer);
-  mag.position.set(0, -0.135, -0.055);
-  mag.rotation.x = -0.14;
-  group.add(mag);
-
-  const grip = new THREE.Mesh(new THREE.BoxGeometry(0.05, 0.14, 0.065), polymer);
-  grip.position.set(0, -0.115, 0.09);
-  grip.rotation.x = 0.3;
-  group.add(grip);
-
-  const stock = new THREE.Mesh(new THREE.BoxGeometry(0.05, 0.06, 0.1), polymer);
-  stock.position.set(0, -0.005, 0.19);
-  group.add(stock);
-
-  // orange identification stripes
-  const stripeL = new THREE.Mesh(new THREE.BoxGeometry(0.004, 0.02, 0.16), accent);
-  stripeL.position.set(-0.049, 0.01, -0.2);
-  group.add(stripeL);
-  const stripeR = stripeL.clone();
-  stripeR.position.x = 0.049;
-  group.add(stripeR);
-
-  const dot = new THREE.Mesh(new THREE.BoxGeometry(0.03, 0.03, 0.02), new THREE.MeshBasicMaterial({ color: 0xff3b46 }));
-  dot.position.set(0, 0.075, 0.02);
-  group.add(dot);
-
-  // rear sight: two posts with an open notch so ADS lines up on the target
-  for (const side of [-1, 1]) {
-    const post = new THREE.Mesh(new THREE.BoxGeometry(0.014, 0.045, 0.02), gunmetal);
-    post.position.set(side * 0.022, 0.135, 0.02);
-    group.add(post);
-  }
-  const frontSight = new THREE.Mesh(new THREE.BoxGeometry(0.012, 0.055, 0.02), gunmetal);
-  frontSight.position.set(0, 0.125, -0.56);
-  group.add(frontSight);
-
-  // hands
-  const rightHand = new THREE.Mesh(new THREE.BoxGeometry(0.055, 0.08, 0.1), glove);
-  rightHand.position.set(0.01, -0.1, 0.07);
-  rightHand.rotation.z = -0.12;
-  group.add(rightHand);
-  const rightKnuckle = new THREE.Mesh(new THREE.BoxGeometry(0.058, 0.02, 0.08), knuckle);
-  rightKnuckle.position.set(0.01, -0.062, 0.055);
-  group.add(rightKnuckle);
-
-  const leftHand = new THREE.Mesh(new THREE.BoxGeometry(0.06, 0.07, 0.12), glove);
-  leftHand.position.set(-0.01, -0.08, -0.44);
-  leftHand.rotation.z = 0.18;
-  group.add(leftHand);
-
-  // forearms and upper arms, running off the bottom of the frame so the
-  // rifle and gloves read as attached to a body instead of floating
-  const rightWrist = new THREE.Vector3(0.012, -0.155, 0.075);
-  const rightElbow = new THREE.Vector3(0.155, -0.47, 0.35);
-  const rightShoulder = new THREE.Vector3(0.36, -0.94, 0.64);
-  addLimb(group, rightWrist, rightElbow, 0.042, 0.058, sleeve);
-  addLimb(group, rightElbow, rightShoulder, 0.062, 0.082, sleeveDark);
-  addLimb(group, rightWrist, rightWrist.clone().lerp(rightElbow, 0.16), 0.049, 0.05, cuff);
-
-  const leftWrist = new THREE.Vector3(-0.012, -0.125, -0.425);
-  const leftElbow = new THREE.Vector3(-0.18, -0.45, 0.04);
-  const leftShoulder = new THREE.Vector3(-0.42, -0.95, 0.42);
-  addLimb(group, leftWrist, leftElbow, 0.04, 0.056, sleeve);
-  addLimb(group, leftElbow, leftShoulder, 0.06, 0.08, sleeveDark);
-  addLimb(group, leftWrist, leftWrist.clone().lerp(leftElbow, 0.16), 0.047, 0.048, cuff);
-
-  // muzzle flash
-  const flash = new THREE.Sprite(new THREE.SpriteMaterial({
-    map: flashTexture(),
-    blending: THREE.AdditiveBlending,
-    depthWrite: false,
-    transparent: true,
-    toneMapped: false,
-  }));
-  flash.position.set(0, 0.015, -0.94);
-  flash.scale.setScalar(0.5);
-  flash.visible = false;
-  group.add(flash);
-
-  const flashLight = new THREE.PointLight(0xffb060, 0, 14, 2);
-  flashLight.position.set(0, 0.02, -0.9);
-  group.add(flashLight);
-
-  return { group, flash, flashLight, mag };
-}
 
 export class Player {
   constructor({ camera, scene, game }) {
@@ -185,10 +23,8 @@ export class Player {
     this.stamina = 100;
     this.onGround = true;
 
-    this.mag = MAG_SIZE;
-    this.reserve = 150;
-    this.magSize = MAG_SIZE;
     this.reloadT = 0;
+    this.reloadTotal = 0;
     this.fireT = 0;
     this.bloom = 0;
     this.ads = false;
@@ -208,14 +44,24 @@ export class Player {
     this.tmpRight = new THREE.Vector3();
     this.tmpUp = new THREE.Vector3();
 
-    const rifle = buildRifle();
-    this.rifle = rifle;
-    this.viewmodel = rifle.group;
-    this.viewmodel.rotation.set(0, 0.02, 0);
-    camera.add(this.viewmodel);
+    this.weapons = WEAPON_DEFS.map((def) => ({
+      ...def,
+      mag: def.magSize,
+      reserve: def.reserveMax,
+      model: def.build(),
+    }));
+    this.weaponIndex = 0;
+    this.weapon = this.weapons[0];
+    this.viewmodel = this.weapon.model.group;
 
-    const fill = new THREE.PointLight(0xffd2a8, 1.8, 2.5, 2);
-    fill.position.set(0.12, 0.02, 0.15);
+    for (const weapon of this.weapons) {
+      weapon.model.group.rotation.set(0, 0.02, 0);
+      weapon.model.group.visible = false;
+      camera.add(weapon.model.group);
+    }
+
+    const fill = new THREE.PointLight(0xffd2a8, 2.3, 3, 2);
+    fill.position.set(0.16, 0.08, 0.08);
     camera.add(fill);
 
     this.basePos = new THREE.Vector3();
@@ -223,10 +69,16 @@ export class Player {
     this.layout(window.innerWidth);
     this.viewmodel.position.copy(this.basePos);
     this.visible = false;
-    this.viewmodel.visible = false;
 
     this.t = 0;
   }
+
+  get mag() { return this.weapon.mag; }
+  set mag(v) { this.weapon.mag = v; }
+  get reserve() { return this.weapon.reserve; }
+  set reserve(v) { this.weapon.reserve = v; }
+  get magSize() { return this.weapon.magSize; }
+  set magSize(v) { /* per-weapon stat */ }
 
   reset() {
     const sx = HUB.x;
@@ -237,9 +89,14 @@ export class Player {
     this.pitch = -0.03;
     this.health = this.maxHealth;
     this.stamina = 100;
-    this.mag = this.magSize;
-    this.reserve = 150;
+    for (const weapon of this.weapons) {
+      weapon.mag = weapon.magSize;
+      weapon.reserve = weapon.reserveMax;
+      weapon.model.group.visible = false;
+    }
+    this.switchWeapon(0, true);
     this.reloadT = 0;
+    this.reloadTotal = 0;
     this.fireT = 0;
     this.bloom = 0;
     this.recoilPitch = 0;
@@ -250,19 +107,55 @@ export class Player {
     this.fov = BASE_FOV;
     this.camera.fov = BASE_FOV;
     this.camera.updateProjectionMatrix();
+    this.visible = true;
     this.viewmodel.visible = true;
   }
 
   setVisible(v) {
-    this.viewmodel.visible = v;
+    this.visible = v;
+    for (let i = 0; i < this.weapons.length; i++) {
+      this.weapons[i].model.group.visible = v && i === this.weaponIndex;
+    }
+  }
+
+  switchWeapon(index, silent = false) {
+    if (index < 0 || index >= this.weapons.length || index === this.weaponIndex) return;
+    this.weapon.model.group.visible = false;
+    this.weaponIndex = index;
+    this.weapon = this.weapons[index];
+    this.viewmodel = this.weapon.model.group;
+    this.viewmodel.visible = this.visible;
+    this.viewmodel.position.copy(this.basePos);
+    this.viewmodel.rotation.set(0, 0.02, 0);
+    this.reloadT = 0;
+    this.reloadTotal = 0;
+    this.fireT = 0;
+    this.flashT = 0;
+    this.bloom = 0;
+    this.kick = 0;
+    this.ads = false;
+    this.layout(window.innerWidth);
+    this.viewmodel.position.copy(this.basePos);
+    if (!silent) {
+      this.game.audio.click();
+      this.game.ui.toast(this.weapon.name + ' READY', '');
+    }
+  }
+
+  cycleWeapon() {
+    this.switchWeapon((this.weaponIndex + 1) % this.weapons.length);
   }
 
   layout(width) {
     const narrow = width < 760;
-    const scale = narrow ? 0.72 : 0.9;
-    this.viewmodel.scale.setScalar(scale);
-    this.basePos.set(narrow ? 0.26 : 0.32, narrow ? -0.17 : -0.2, narrow ? -0.88 : -0.95);
-    this.adsPos.set(0, narrow ? -0.098 : -0.122, narrow ? -0.72 : -0.78);
+    const def = this.weapon;
+    const modelScale = def.scale * (narrow ? 0.8 : 1);
+    const xScale = narrow ? 0.82 : 1;
+    const yScale = narrow ? 0.86 : 1;
+    const zScale = narrow ? 0.93 : 1;
+    this.viewmodel.scale.setScalar(modelScale);
+    this.basePos.set(def.base[0] * xScale, def.base[1] * yScale, def.base[2] * zScale);
+    this.adsPos.set(def.ads[0], def.ads[1] * (narrow ? 0.82 : 1), def.ads[2] * (narrow ? 0.94 : 1));
   }
 
   look(dx, dy) {
@@ -280,42 +173,53 @@ export class Player {
       return;
     }
 
+    const weapon = this.weapon;
     this.mag--;
-    this.fireT = 0.098;
-    this.bloom = Math.min(1.4, this.bloom + 0.34);
-    this.kick = 1;
-    this.flashT = 0.055;
+    this.fireT = weapon.fireDelay;
+    this.bloom = Math.min(1.4, this.bloom + weapon.bloomPerShot);
+    this.kick = weapon.kick;
+    this.flashT = weapon.flashTime;
 
     const spread = this.currentSpread();
-    const dir = this.camera.getWorldDirection(new THREE.Vector3());
-    this.tmpRight.crossVectors(dir, UP).normalize();
-    this.tmpUp.crossVectors(this.tmpRight, dir).normalize();
-    dir.addScaledVector(this.tmpRight, rand(-1, 1) * spread);
-    dir.addScaledVector(this.tmpUp, rand(-1, 1) * spread);
-    dir.normalize();
-
+    const baseDir = this.camera.getWorldDirection(new THREE.Vector3());
+    this.tmpRight.crossVectors(baseDir, UP).normalize();
+    this.tmpUp.crossVectors(this.tmpRight, baseDir).normalize();
     const origin = this.camera.getWorldPosition(new THREE.Vector3());
-    this.game.fireHitscan(origin, dir);
+    const dir = new THREE.Vector3();
 
-    this.recoilPitch += 0.0072 + rand(0, 0.0032);
-    this.recoilYaw += rand(-0.0045, 0.0045);
+    for (let i = 0; i < weapon.pellets; i++) {
+      dir.copy(baseDir);
+      dir.addScaledVector(this.tmpRight, rand(-1, 1) * spread);
+      dir.addScaledVector(this.tmpUp, rand(-1, 1) * spread);
+      dir.normalize();
+      this.game.fireHitscan(origin, dir, {
+        damage: weapon.damage,
+        tracer: i === 0,
+        color: weapon.tracerColor,
+      });
+    }
+
+    this.recoilPitch += weapon.recoilPitch + rand(0, weapon.recoilPitch * 0.45);
+    this.recoilYaw += rand(-weapon.recoilYaw, weapon.recoilYaw);
     this.roll += rand(-0.004, 0.004);
-    this.shake = Math.min(1, this.shake + 0.16);
-    this.game.audio.shot();
+    this.shake = Math.min(1, this.shake + 0.16 * weapon.kick);
+    this.game.audio.shot(weapon.sound);
     this.game.onPlayerShot();
   }
 
   currentSpread() {
+    const weapon = this.weapon;
     const speed = Math.hypot(this.vel.x, this.vel.z);
-    let s = 0.0035 + this.bloom * 0.0032 + Math.min(speed / 10, 1) * 0.006;
-    if (this.ads) s *= 0.32;
+    let s = weapon.baseSpread + this.bloom * weapon.bloomSpread + Math.min(speed / 10, 1) * 0.006;
+    if (this.ads) s *= weapon.adsSpread;
     if (!this.onGround) s *= 1.7;
     return s;
   }
 
   reload() {
     if (this.reloadT > 0 || this.mag >= this.magSize || this.reserve <= 0) return;
-    this.reloadT = RELOAD_TIME;
+    this.reloadTotal = this.weapon.reloadTime;
+    this.reloadT = this.reloadTotal;
     this.game.audio.reload();
   }
 
@@ -355,7 +259,7 @@ export class Player {
     }
 
     this.ads = !!input.ads && this.reloadT <= 0;
-    const targetFov = this.ads ? ADS_FOV : BASE_FOV;
+    const targetFov = this.ads ? this.weapon.adsFov : BASE_FOV;
     if (Math.abs(this.fov - targetFov) > 0.01) {
       this.fov = damp(this.fov, targetFov, 12, dt);
       this.camera.fov = this.fov;
@@ -465,7 +369,7 @@ export class Player {
 
     // reload animation
     if (this.reloadT > 0) {
-      const p = 1 - this.reloadT / RELOAD_TIME;
+      const p = 1 - this.reloadT / (this.reloadTotal || this.weapon.reloadTime);
       const dip = Math.sin(clamp(p, 0, 1) * Math.PI);
       vm.rotation.x -= dip * 0.7;
       vm.position.y -= dip * 0.12;
@@ -473,14 +377,15 @@ export class Player {
     }
 
     // muzzle flash
+    const model = this.weapon.model;
     const flashOn = this.flashT > 0;
-    this.rifle.flash.visible = flashOn;
+    model.flash.visible = flashOn;
     if (flashOn) {
-      this.rifle.flash.material.rotation = rand(0, Math.PI);
-      this.rifle.flash.scale.setScalar(rand(0.4, 0.62));
-      this.rifle.flashLight.intensity = 45;
+      model.flash.material.rotation = rand(0, Math.PI);
+      model.flash.scale.setScalar(rand(0.4, 0.62) * (this.weapon.flashScale || 1));
+      model.flashLight.intensity = 45;
     } else {
-      this.rifle.flashLight.intensity = 0;
+      model.flashLight.intensity = 0;
     }
 
     if (input.fire) this.tryShoot();
