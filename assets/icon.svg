@@ -1,0 +1,36 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="Frostpaw icon">
+  <defs>
+    <linearGradient id="night" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#173049"/>
+      <stop offset="1" stop-color="#050b14"/>
+    </linearGradient>
+    <radialGradient id="moon" cx="50%" cy="42%" r="55%">
+      <stop offset="0" stop-color="#fff3c9"/>
+      <stop offset="0.62" stop-color="#f3cd84"/>
+      <stop offset="1" stop-color="#c78f45"/>
+    </radialGradient>
+    <linearGradient id="fur" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#dbe8ea"/>
+      <stop offset="1" stop-color="#8fa8ad"/>
+    </linearGradient>
+  </defs>
+  <rect width="512" height="512" rx="112" fill="url(#night)"/>
+  <circle cx="256" cy="208" r="150" fill="url(#moon)" opacity="0.22"/>
+  <circle cx="256" cy="208" r="106" fill="url(#moon)"/>
+  <circle cx="292" cy="176" r="94" fill="#0b1826" opacity="0.9"/>
+  <g>
+    <path d="M146 296 L132 168 L204 216 Z" fill="url(#fur)"/>
+    <path d="M366 296 L380 168 L308 216 Z" fill="url(#fur)"/>
+    <path d="M152 288 L146 206 L190 232 Z" fill="#5d7c84"/>
+    <path d="M360 288 L366 206 L322 232 Z" fill="#5d7c84"/>
+    <path d="M256 218 C324 218 352 272 340 326 C330 373 296 396 256 396 C216 396 182 373 172 326 C160 272 188 218 256 218 Z" fill="url(#fur)"/>
+    <ellipse cx="216" cy="302" rx="19" ry="23" fill="#132330"/>
+    <ellipse cx="296" cy="302" rx="19" ry="23" fill="#132330"/>
+    <ellipse cx="221" cy="295" rx="6.5" ry="7.5" fill="#d9f7ff"/>
+    <ellipse cx="301" cy="295" rx="6.5" ry="7.5" fill="#d9f7ff"/>
+    <path d="M244 340 L268 340 L256 352 Z" fill="#e6a2a2"/>
+    <path d="M256 352 C256 364 244 369 236 362 M256 352 C256 364 268 369 276 362" fill="none" stroke="#4c3c3c" stroke-width="7" stroke-linecap="round"/>
+    <path d="M182 326 L128 316 M184 346 L132 352 M330 326 L384 316 M328 346 L380 352" fill="none" stroke="#e9f3f4" stroke-width="9" stroke-linecap="round" opacity="0.75"/>
+  </g>
+  <circle cx="256" cy="256" r="236" fill="none" stroke="#e8c37e" stroke-width="8" opacity="0.5"/>
+</svg>
