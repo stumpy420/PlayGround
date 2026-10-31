@@ -1,0 +1,357 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+  <meta name="theme-color" content="#09101d" />
+  <meta name="description" content="Catterfall — a first-person open-world fantasy RPG set in a frozen kingdom of cats." />
+  <title>Catterfall — The Ninth Life</title>
+  <link rel="stylesheet" href="/src/style.css" />
+</head>
+<body>
+  <div id="app">
+    <canvas id="scene" aria-label="Catterfall game world"></canvas>
+    <div class="scene-grade"></div>
+    <div class="grain"></div>
+
+    <!-- ===================== MAIN MENU ===================== -->
+    <section id="menu" class="screen">
+      <div class="menu-vignette"></div>
+      <header class="menu-top">
+        <div class="brand-small"><span class="brand-rune">✦</span> AN ORIGINAL FELINE SAGA</div>
+        <div class="menu-top-right">
+          <span id="menu-clock">Frostfall · 15th of Ember</span>
+          <button id="menu-audio" class="icon-button" aria-label="Toggle sound">◈ <span>Sound on</span></button>
+        </div>
+      </header>
+
+      <div class="menu-main">
+        <div class="hero-copy">
+          <div class="eyebrow"><span></span> THE FROZEN KINGDOM AWAITS <span></span></div>
+          <h1 class="logo">
+            <span class="logo-cat">
+              <svg viewBox="0 0 120 52" aria-hidden="true">
+                <path d="M8 39 L24 7 L39 24 L80 24 L96 7 L112 39 C99 48 78 51 60 51 C42 51 21 48 8 39Z" fill="currentColor" opacity=".18"/>
+                <path d="M14 36 L28 13 L40 27 L80 27 L92 13 L106 36" fill="none" stroke="currentColor" stroke-width="2.5"/>
+                <circle cx="46" cy="34" r="2.5" fill="currentColor"/><circle cx="74" cy="34" r="2.5" fill="currentColor"/>
+                <path d="M56 40 Q60 43 64 40" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+              </svg>
+            </span>
+            CATTERFALL
+          </h1>
+          <h2>THE NINTH LIFE</h2>
+          <p class="hero-lede">Beneath the snows of the Ninefold Reach, an ancient hunger stirs. You are no hero. You are a cat with a name — and that may be enough.</p>
+          <div class="hero-facts">
+            <div><strong>VI</strong><span>Holds to explore</span></div>
+            <div><strong>∞</strong><span>Lives to lose</span></div>
+            <div><strong>1</strong><span>Prophecy</span></div>
+          </div>
+        </div>
+
+        <div class="character-panel">
+          <div class="panel-heading">
+            <span>MAKE YOUR MARK</span>
+            <span class="panel-rule"></span>
+          </div>
+          <label class="field-label" for="cat-name">TRUE NAME</label>
+          <input id="cat-name" class="name-input" maxlength="16" value="Rook" autocomplete="off" spellcheck="false" />
+
+          <div class="field-label">BLOODLINE</div>
+          <div id="breed-options" class="choice-row breeds">
+            <button class="breed-card selected" data-breed="highland" data-fur="#a9a39a">
+              <span class="breed-swatch" style="--fur:#a9a39a;--fur2:#77746f"></span>
+              <span><b>Highland</b><small>Stout · warm</small></span>
+            </button>
+            <button class="breed-card" data-breed="siamese" data-fur="#d9cbb3">
+              <span class="breed-swatch" style="--fur:#d9cbb3;--fur2:#5b4a3d"></span>
+              <span><b>Siamese</b><small>Quick · clever</small></span>
+            </button>
+            <button class="breed-card" data-breed="tuxedo" data-fur="#252832">
+              <span class="breed-swatch" style="--fur:#252832;--fur2:#e9edf3"></span>
+              <span><b>Tuxedo</b><small>Lucky · bold</small></span>
+            </button>
+          </div>
+
+          <div class="fur-row">
+            <span class="field-label">FUR</span>
+            <div id="fur-options" class="swatches">
+              <button class="swatch selected" data-fur="#a9a39a" style="--sw:#a9a39a" aria-label="Ash fur"></button>
+              <button class="swatch" data-fur="#e3d4ba" style="--sw:#e3d4ba" aria-label="Cream fur"></button>
+              <button class="swatch" data-fur="#2b2d36" style="--sw:#2b2d36" aria-label="Coal fur"></button>
+              <button class="swatch" data-fur="#b77748" style="--sw:#b77748" aria-label="Ginger fur"></button>
+              <button class="swatch" data-fur="#6f7f91" style="--sw:#6f7f91" aria-label="Blue fur"></button>
+            </div>
+          </div>
+
+          <div class="field-label">PATH</div>
+          <div id="class-options" class="choice-row classes">
+            <button class="class-card selected" data-class="frostblade">
+              <span class="class-glyph">⚔</span>
+              <span><b>Frostblade</b><small>Blade &amp; shield</small></span>
+            </button>
+            <button class="class-card" data-class="nightwhisker">
+              <span class="class-glyph">➶</span>
+              <span><b>Nightwhisker</b><small>Bow &amp; claw</small></span>
+            </button>
+            <button class="class-card" data-class="embermage">
+              <span class="class-glyph">✦</span>
+              <span><b>Embermage</b><small>Fire &amp; frost</small></span>
+            </button>
+          </div>
+
+          <button id="play-btn" class="play-button">
+            <span class="play-rune">❖</span>
+            <span>Play</span>
+            <small>Enter Catterfall</small>
+          </button>
+          <div class="menu-footnote">WASD to move · Mouse to look · E to interact · Click to capture cursor</div>
+        </div>
+      </div>
+
+      <footer class="menu-footer">
+        <span>CATTERFALL · AN ORIGINAL WORK OF FELINE FANTASY</span>
+        <span class="footer-controls"><i></i> FIRST-PERSON · PC &amp; TOUCH</span>
+      </footer>
+    </section>
+
+    <!-- ===================== LOADING ===================== -->
+    <div id="loading" class="screen hidden">
+      <div class="loading-inner">
+        <div class="loading-cat">ᓚᘏᗢ</div>
+        <div class="loading-title">CROSSING THE NINEFOLD PASS</div>
+        <div class="loading-bar"><i id="loading-fill"></i></div>
+        <div class="loading-tip">The snow remembers every pawstep.</div>
+      </div>
+    </div>
+
+    <!-- ===================== GAME HUD ===================== -->
+    <section id="hud" class="hidden" aria-live="polite">
+      <div class="hud-top-left">
+        <div class="level-medallion"><span id="hud-level">1</span><small>LVL</small></div>
+        <div class="vitals">
+          <div class="cat-line"><span id="hud-name">Rook</span><em id="hud-class">Frostblade</em></div>
+          <div class="bar health"><span class="bar-icon">♥</span><div class="bar-track"><i id="bar-health"></i></div><b id="health-text">100</b></div>
+          <div class="bar stamina"><span class="bar-icon">⚡</span><div class="bar-track"><i id="bar-stamina"></i></div><b id="stamina-text">100</b></div>
+          <div class="bar mana"><span class="bar-icon">✦</span><div class="bar-track"><i id="bar-mana"></i></div><b id="mana-text">80</b></div>
+        </div>
+      </div>
+
+      <div class="compass-wrap">
+        <div class="compass">
+          <div class="compass-strip" id="compass-strip">
+            <span>W</span><span>NW</span><span>N</span><span>NE</span><span>E</span><span>SE</span><span>S</span><span>SW</span>
+          </div>
+          <i class="compass-needle"></i>
+        </div>
+        <div class="compass-zone" id="compass-zone">FROSTWHISKER HAMLET</div>
+      </div>
+
+      <div class="hud-top-right">
+        <div class="map-frame">
+          <canvas id="minimap" width="188" height="188"></canvas>
+          <div class="map-ring"></div>
+          <div class="map-n">N</div>
+          <button id="map-open" class="map-expand" aria-label="Open world map">⌖</button>
+        </div>
+        <div class="quest-tracker">
+          <div class="quest-kicker"><span></span> ACTIVE QUEST</div>
+          <div class="quest-title" id="quest-title">The Ninth Life</div>
+          <div class="quest-step" id="quest-step">Speak with Elder Maelis in the village square.</div>
+          <div class="quest-dist" id="quest-dist">◆ 42m</div>
+        </div>
+      </div>
+
+      <div id="crosshair" class="crosshair"><i></i><b></b></div>
+      <div id="interact-prompt" class="interact-prompt hidden">
+        <kbd>E</kbd><span id="interact-label">Interact</span>
+      </div>
+      <div id="loot-toast" class="loot-toast hidden"></div>
+      <div id="location-title" class="location-title hidden"><small>DISCOVERED</small><span id="location-name">Frostwhisker Hamlet</span></div>
+      <div id="damage-flash" class="damage-flash"></div>
+      <div id="frost-overlay" class="frost-overlay"></div>
+
+      <div class="hud-bottom-left">
+        <div class="gold-pill"><span>◉</span> <b id="hud-gold">35</b> <small>gold</small></div>
+        <div class="hint-line" id="desktop-hint"><kbd>Shift</kbd> sprint <kbd>Ctrl</kbd> crouch <kbd>Tab</kbd> pack <kbd>J</kbd> journal</div>
+      </div>
+
+      <div class="hud-bottom-center">
+        <div class="hotbar" id="hotbar">
+          <button class="slot selected" data-slot="0"><span class="slot-icon">⚔</span><b>1</b><small>Sword</small></button>
+          <button class="slot" data-slot="1"><span class="slot-icon">➶</span><b>2</b><small>Bow</small></button>
+          <button class="slot" data-slot="2"><span class="slot-icon">爪</span><b>3</b><small>Claws</small></button>
+          <button class="slot spell" data-slot="3"><span class="slot-icon">✹</span><b>4</b><small>Fire</small></button>
+          <button class="slot spell" data-slot="4"><span class="slot-icon">❄</span><b>5</b><small>Frost</small></button>
+          <button class="slot spell" data-slot="5"><span class="slot-icon">ϟ</span><b>6</b><small>Storm</small></button>
+          <button class="slot spell" data-slot="6"><span class="slot-icon">✚</span><b>7</b><small>Mend</small></button>
+        </div>
+        <div class="spell-cost" id="spell-cost">Steel remembers. So do cats.</div>
+      </div>
+
+      <div class="hud-bottom-right">
+        <button id="inventory-open" class="round-action" aria-label="Open pack">⌑<small>Pack</small></button>
+        <button id="quest-open" class="round-action" aria-label="Open journal">▤<small>Journal</small></button>
+        <button id="pause-open" class="round-action" aria-label="Pause">Ⅱ<small>Pause</small></button>
+      </div>
+
+      <div class="crosshair-tip hidden" id="aim-tip">Hold to draw · Release to loose</div>
+      <div class="companion-card hidden" id="companion-card">
+        <span class="companion-paw">ᓚᘏᗢ</span>
+        <div><b id="companion-name">Kestrel</b><small id="companion-state">Following</small></div>
+      </div>
+
+      <!-- mobile controls -->
+      <div id="mobile-controls" class="mobile-controls">
+        <div id="joystick" class="joystick"><div class="joystick-knob"></div><span>MOVE</span></div>
+        <div id="look-zone" class="look-zone"><span>DRAG TO LOOK</span></div>
+        <div class="touch-actions">
+          <button id="btn-jump" class="touch-btn small">⤒<small>Jump</small></button>
+          <button id="btn-interact" class="touch-btn small">E<small>Use</small></button>
+          <button id="btn-attack" class="touch-btn attack">⚔<small>Strike</small></button>
+          <button id="btn-block" class="touch-btn small">◈<small>Guard</small></button>
+          <button id="btn-spell" class="touch-btn small">✦<small>Spell</small></button>
+          <button id="btn-sprint" class="touch-btn sprint">»<small>Run</small></button>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===================== DIALOGUE ===================== -->
+    <div id="dialogue" class="modal-layer hidden">
+      <div class="dialogue-box">
+        <div class="dialogue-portrait" id="dialogue-portrait"><span>ᓚᘏᗢ</span></div>
+        <div class="dialogue-content">
+          <div class="dialogue-name" id="dialogue-name">Elder Maelis</div>
+          <div class="dialogue-role" id="dialogue-role">Keeper of the Ninefold Lore</div>
+          <p class="dialogue-text" id="dialogue-text"></p>
+          <div class="dialogue-options" id="dialogue-options"></div>
+          <div class="dialogue-relation"><span id="relation-label">Bond</span><div class="relation-track"><i id="relation-fill"></i></div></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===================== INVENTORY ===================== -->
+    <div id="inventory" class="modal-layer hidden">
+      <div class="book-panel inventory-panel">
+        <div class="book-tabs">
+          <button class="book-tab active" data-tab="pack">PACK</button>
+          <button class="book-tab" data-tab="skills">SKILLS</button>
+          <button class="book-tab" data-tab="equipment">EQUIPMENT</button>
+          <button class="book-close" data-close="inventory">×</button>
+        </div>
+        <div class="inventory-body">
+          <div class="inventory-left">
+            <div class="panel-title">THE TRAVELLER'S PACK</div>
+            <div class="inventory-grid" id="inventory-grid"></div>
+            <div class="inventory-detail" id="item-detail">Select an item to inspect it.</div>
+          </div>
+          <aside class="inventory-right">
+            <div class="equip-title">WORN &amp; WIELDED</div>
+            <div class="equip-slots" id="equip-slots"></div>
+            <div class="character-summary">
+              <div class="summary-row"><span>Attack</span><b id="stat-attack">12</b></div>
+              <div class="summary-row"><span>Armor</span><b id="stat-armor">6</b></div>
+              <div class="summary-row"><span>Spellcraft</span><b id="stat-magic">8</b></div>
+              <div class="summary-row"><span>Carrying</span><b id="stat-weight">18 / 80</b></div>
+            </div>
+            <div class="xp-block"><span>LEVEL <b id="inv-level">1</b></span><div class="xp-track"><i id="inv-xp"></i></div><small id="inv-xp-text">0 / 100 XP</small></div>
+            <div class="skill-points" id="skill-points">3 skill points to spend</div>
+          </aside>
+        </div>
+        <div class="skills-pane hidden" id="skills-pane">
+          <div class="panel-title">THE NINE PATHS</div>
+          <div class="skill-grid" id="skill-grid"></div>
+          <p class="skill-note">Every level grants a skill point. Choose the instincts your cat sharpens.</p>
+        </div>
+        <div class="equipment-pane hidden" id="equipment-pane"></div>
+      </div>
+    </div>
+
+    <!-- ===================== QUEST LOG ===================== -->
+    <div id="questlog" class="modal-layer hidden">
+      <div class="book-panel quest-panel">
+        <div class="book-tabs">
+          <button class="book-tab active">JOURNAL</button>
+          <span class="journal-date" id="journal-date">Frostfall · 15th of Ember</span>
+          <button class="book-close" data-close="questlog">×</button>
+        </div>
+        <div class="quest-body">
+          <aside class="quest-list" id="quest-list"></aside>
+          <article class="quest-detail">
+            <div class="quest-detail-kicker" id="detail-kicker">MAIN QUEST</div>
+            <h3 id="detail-title">The Ninth Life</h3>
+            <p id="detail-desc"></p>
+            <div class="quest-objectives" id="detail-objectives"></div>
+            <div class="quest-reward" id="detail-reward"></div>
+          </article>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===================== SHOP ===================== -->
+    <div id="shop" class="modal-layer hidden">
+      <div class="book-panel shop-panel">
+        <div class="book-tabs">
+          <button class="book-tab active" id="shop-title-tab">SABLE'S SUNDRIES</button>
+          <span class="journal-date">Gold: <b id="shop-gold">35</b></span>
+          <button class="book-close" data-close="shop">×</button>
+        </div>
+        <div class="shop-body">
+          <div class="shop-list" id="shop-list"></div>
+          <aside class="shop-side">
+            <div class="merchant-portrait">ᓚᘏᗢ</div>
+            <h3 id="shop-merchant">Sable</h3>
+            <p id="shop-greeting">"Finest wares this side of the Ninefold. No refunds for curses."</p>
+            <div class="shop-tip">Click to buy. Shift-click to sell from your pack.</div>
+          </aside>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===================== WORLD MAP ===================== -->
+    <div id="worldmap" class="modal-layer hidden">
+      <div class="map-panel">
+        <div class="map-header"><span>THE NINEFOLD REACH</span><button class="book-close" data-close="worldmap">×</button></div>
+        <canvas id="worldmap-canvas" width="900" height="640"></canvas>
+        <div class="map-legend"><span><i class="lg-player"></i> You</span><span><i class="lg-quest"></i> Quest</span><span><i class="lg-town"></i> Hold</span><span><i class="lg-danger"></i> Danger</span></div>
+      </div>
+    </div>
+
+    <!-- ===================== PAUSE ===================== -->
+    <div id="pause" class="modal-layer hidden">
+      <div class="pause-panel">
+        <div class="pause-eyebrow">THE SNOW WAITS</div>
+        <h2>PAUSED</h2>
+        <button id="resume-btn" class="menu-button primary">Resume Journey</button>
+        <button id="save-btn" class="menu-button">Save Journey</button>
+        <button id="settings-btn" class="menu-button">Settings</button>
+        <button id="newgame-btn" class="menu-button subtle">Abandon &amp; Begin Again</button>
+        <div class="pause-controls">
+          <div><kbd>WASD</kbd> Move</div><div><kbd>Mouse</kbd> Look</div><div><kbd>E</kbd> Interact</div>
+          <div><kbd>LMB</kbd> Attack / Cast</div><div><kbd>RMB</kbd> Block / Aim</div><div><kbd>Space</kbd> Jump</div>
+          <div><kbd>Shift</kbd> Sprint</div><div><kbd>Ctrl</kbd> Crouch</div><div><kbd>Tab</kbd> Pack</div>
+        </div>
+        <div class="settings-row hidden" id="settings-row">
+          <label>Sound <input id="volume-slider" type="range" min="0" max="1" step="0.05" value="0.7" /></label>
+          <label>Camera bob <input id="bob-slider" type="range" min="0" max="1" step="0.05" value="0.7" /></label>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===================== DEATH ===================== -->
+    <div id="death" class="modal-layer hidden">
+      <div class="death-panel">
+        <div class="death-mark">ᓚᘏᗢ</div>
+        <div class="death-eyebrow">THE NINTH LIFE SLIPS AWAY</div>
+        <h2>YOU HAVE FALLEN</h2>
+        <p>But cats are rarely gone for good. The ember remembers your name.</p>
+        <button id="respawn-btn" class="menu-button primary">Rise Again</button>
+      </div>
+    </div>
+
+    <div id="bubble-layer"></div>
+    <div id="subtitle" class="subtitle hidden"></div>
+    <div id="screen-reader" class="sr-only" aria-live="assertive"></div>
+  </div>
+  <script type="module" src="/src/main.js"></script>
+</body>
+</html>
