@@ -1,0 +1,349 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no" />
+  <meta name="theme-color" content="#0a1218" />
+  <title>CATTERFALL — The Ninth Life</title>
+  <meta name="description" content="An open-world fantasy RPG where every soul is a cat. Explore the frozen kingdom of Catterfall, master blade and spell, and face the thing beneath the snow." />
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Cpath fill='%23d9b36c' d='M10 26 6 6l18 10h16L58 6l-4 20c6 10 4 24-6 30-9 6-27 6-36 0C2 50 4 36 10 26Z'/%3E%3Ccircle cx='23' cy='34' r='4' fill='%230a1218'/%3E%3Ccircle cx='41' cy='34' r='4' fill='%230a1218'/%3E%3Cpath d='M29 43h6l-3 4Z' fill='%230a1218'/%3E%3C/svg%3E" />
+  <script type="module" crossorigin src="/assets/index-D43DI7KZ.js"></script>
+  <link rel="stylesheet" crossorigin href="/assets/index-DGUeEYJh.css">
+</head>
+<body>
+  <div id="app">
+    <canvas id="game"></canvas>
+    <div id="grain"></div>
+    <div id="vignette"></div>
+
+    <!-- ============ LOADING ============ -->
+    <section id="loading" class="screen show">
+      <div class="loading-mark">
+        <svg viewBox="0 0 64 64" class="sigil"><path d="M10 26 6 6l18 10h16L58 6l-4 20c6 10 4 24-6 30-9 6-27 6-36 0C2 50 4 36 10 26Z"/><circle cx="23" cy="34" r="3.6"/><circle cx="41" cy="34" r="3.6"/><path d="M29 43h6l-3 4Z"/></svg>
+      </div>
+      <h1 class="load-title">CATTERFALL</h1>
+      <div class="load-bar"><i id="load-fill"></i></div>
+      <p id="load-text" class="load-text">Waking the kingdom…</p>
+    </section>
+
+    <!-- ============ MAIN MENU ============ -->
+    <section id="menu" class="screen">
+      <div class="menu-glow"></div>
+      <div class="menu-inner">
+        <div class="menu-crest">
+          <svg viewBox="0 0 64 64" class="sigil big"><path d="M10 26 6 6l18 10h16L58 6l-4 20c6 10 4 24-6 30-9 6-27 6-36 0C2 50 4 36 10 26Z"/><circle cx="23" cy="34" r="3.6"/><circle cx="41" cy="34" r="3.6"/><path d="M29 43h6l-3 4Z"/></svg>
+        </div>
+        <h1 class="game-title">CATTERFALL</h1>
+        <p class="game-sub">THE NINTH LIFE</p>
+        <p class="game-tag">Every soul in the kingdom is a cat.<br/>Something beneath the snow has stopped purring.</p>
+        <nav class="menu-buttons">
+          <button id="btn-continue" class="menu-btn hidden"><span>Continue</span><small>Resume your last life</small></button>
+          <button id="btn-new" class="menu-btn primary"><span>New Life</span><small>Begin the prophecy</small></button>
+          <button id="btn-how" class="menu-btn"><span>How to Play</span><small>Controls &amp; counsel</small></button>
+          <button id="btn-settings" class="menu-btn"><span>Settings</span><small>Sound, quality, comfort</small></button>
+        </nav>
+        <div class="menu-foot">
+          <span>An original tale of Catterfall</span><span class="dot">·</span><span>v1.0</span>
+        </div>
+      </div>
+      <div class="menu-side">
+        <div class="side-line"></div>
+        <p>“The Nine sealed the Empty Bowl.<br/>The Tenth was promised.<br/>The Tenth is late.”</p>
+        <span>— Fragment, Shrine of the Nine</span>
+      </div>
+    </section>
+
+    <!-- ============ CHARACTER CREATOR ============ -->
+    <section id="creator" class="screen panel-screen">
+      <div class="creator-wrap">
+        <div class="creator-head">
+          <span class="eyebrow">The Shrine of the Nine</span>
+          <h2>Who are you, little hunter?</h2>
+          <p>Nine lives were given to the first cats. The tenth was withheld. You are what happens next.</p>
+        </div>
+        <div class="creator-body">
+          <div class="creator-preview">
+            <canvas id="preview"></canvas>
+            <div class="preview-ring"></div>
+            <div class="preview-label">THE TENTH</div>
+          </div>
+          <div class="creator-options">
+            <label class="field"><span>Name</span><input id="cat-name" maxlength="18" value="Moth" autocomplete="off" spellcheck="false"/></label>
+            <div class="field"><span>Breed</span>
+              <div class="chips" id="breed-chips"></div>
+            </div>
+            <div class="field"><span>Fur</span>
+              <div class="swatches" id="fur-swatches"></div>
+            </div>
+            <div class="field"><span>Eyes</span>
+              <div class="swatches eyes" id="eye-swatches"></div>
+            </div>
+            <div class="field"><span>Calling</span>
+              <div class="classes" id="class-cards"></div>
+            </div>
+          </div>
+        </div>
+        <div class="creator-foot">
+          <button id="btn-back-menu" class="btn ghost">Back</button>
+          <div class="creator-hint" id="class-blurb"></div>
+          <button id="btn-begin" class="btn gold">Enter Catterfall</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============ HUD ============ -->
+    <section id="hud" class="screen">
+      <div class="hud-top-left">
+        <div class="portrait-wrap">
+          <div class="cat-avatar" id="hud-avatar"><i class="ear l"></i><i class="ear r"></i><i class="eye l"></i><i class="eye r"></i><i class="nose"></i></div>
+          <div class="level-pip" id="hud-level">1</div>
+        </div>
+        <div class="hud-vitals">
+          <div class="hud-name"><span id="hud-name">Moth</span><em id="hud-class">Wayfarer</em></div>
+          <div class="bar health"><i id="bar-health"></i><b id="txt-health">100</b><span>HEALTH</span></div>
+          <div class="bar stamina"><i id="bar-stamina"></i><b id="txt-stamina">100</b><span>STAMINA</span></div>
+          <div class="bar mana"><i id="bar-mana"></i><b id="txt-mana">80</b><span>MANA</span></div>
+          <div class="xp-bar"><i id="bar-xp"></i><span id="txt-xp">0 / 100</span></div>
+        </div>
+      </div>
+
+      <div class="hud-top-center">
+        <div class="compass"><div class="compass-strip" id="compass-strip"></div><div class="compass-needle"></div></div>
+        <div class="location" id="location">Pawsmouth</div>
+      </div>
+
+      <div class="hud-top-right">
+        <div class="coin"><span class="coin-ico"></span><b id="hud-gold">0</b></div>
+        <div class="clock"><span id="hud-time">09:00</span><i id="hud-weather">Snow</i></div>
+      </div>
+
+      <div class="quest-tracker" id="quest-tracker">
+        <div class="qt-head"><span>ACTIVE QUEST</span><i id="qt-type">MAIN</i></div>
+        <div class="qt-title" id="qt-title">A Cold Welcome</div>
+        <div class="qt-obj" id="qt-obj">Speak with Elder Whiskerby</div>
+        <div class="qt-dist" id="qt-dist"></div>
+      </div>
+
+      <div class="enemy-frame hidden" id="enemy-frame">
+        <div class="enemy-name" id="enemy-name">Snow Wolf</div>
+        <div class="enemy-bar"><i id="enemy-hp"></i></div>
+      </div>
+
+      <div class="crosshair hidden" id="crosshair"><i></i><i></i><i></i><i></i><b></b></div>
+
+      <div class="hud-bottom-left">
+        <div class="hotbar" id="hotbar">
+          <button class="slot spell" data-spell="fireball"><span class="key">1</span><span class="ico" data-ico="fire"></span><small>Ember</small><i class="cd"></i></button>
+          <button class="slot spell" data-spell="lightning"><span class="key">2</span><span class="ico" data-ico="bolt"></span><small>Fulmin</small><i class="cd"></i></button>
+          <button class="slot spell" data-spell="heal"><span class="key">3</span><span class="ico" data-ico="heal"></span><small>Mend</small><i class="cd"></i></button>
+          <button class="slot spell" data-spell="ice"><span class="key">4</span><span class="ico" data-ico="ice"></span><small>Frost</small><i class="cd"></i></button>
+        </div>
+        <div class="weapon-line">
+          <div class="weapon-ico" id="weapon-ico" data-ico="sword"></div>
+          <div><b id="weapon-name">Rusty Whiskerblade</b><span id="weapon-stat">8 damage · Claws</span></div>
+          <button class="mini" id="btn-potion">R · Potion <b id="potion-count">2</b></button>
+        </div>
+      </div>
+
+      <div class="hud-bottom-right">
+        <div class="hud-actions">
+          <button class="hud-btn" data-action="inventory"><span data-ico="bag"></span><small>I</small></button>
+          <button class="hud-btn" data-action="quests"><span data-ico="quest"></span><small>J</small></button>
+          <button class="hud-btn" data-action="map"><span data-ico="map"></span><small>M</small></button>
+          <button class="hud-btn" data-action="skills"><span data-ico="star"></span><small>K</small></button>
+        </div>
+        <div class="hint-line"><span id="hint-text">WASD move · Shift sprint · E interact · LMB attack</span></div>
+      </div>
+
+      <div class="interact-prompt hidden" id="interact-prompt"><b>E</b><span id="interact-text">Talk</span></div>
+      <div class="toasts" id="toasts"></div>
+      <div class="float-layer" id="float-layer"></div>
+      <div class="subtitle hidden" id="subtitle"></div>
+      <div class="area-banner hidden" id="area-banner"><span id="area-eyebrow">Now entering</span><h3 id="area-name">Whiskerhold</h3><p id="area-sub">The city of nine bells</p></div>
+
+      <!-- Mobile controls -->
+      <div id="mobile-controls" class="hidden">
+        <div class="joystick" id="joystick"><i id="stick"></i></div>
+        <div class="touch-look" id="touch-look"></div>
+        <div class="touch-actions">
+          <button class="tbtn attack" data-touch="attack">⚔</button>
+          <button class="tbtn" data-touch="interact">✦</button>
+          <button class="tbtn" data-touch="jump">↑</button>
+          <button class="tbtn small" data-touch="spell">✹</button>
+          <button class="tbtn small" data-touch="potion">♥</button>
+          <button class="tbtn small" data-touch="menu">☰</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============ DIALOGUE ============ -->
+    <section id="dialogue" class="screen overlay">
+      <div class="dialogue-box">
+        <div class="dlg-portrait"><div class="cat-avatar" id="dlg-avatar"><i class="ear l"></i><i class="ear r"></i><i class="eye l"></i><i class="eye r"></i><i class="nose"></i></div></div>
+        <div class="dlg-main">
+          <div class="dlg-name" id="dlg-name">Elder Whiskerby</div>
+          <p class="dlg-text" id="dlg-text"></p>
+          <div class="dlg-options" id="dlg-options"></div>
+        </div>
+        <button class="close-x" id="dlg-close">✕</button>
+      </div>
+    </section>
+
+    <!-- ============ INVENTORY ============ -->
+    <section id="inventory" class="screen overlay panel-screen">
+      <div class="panel wide">
+        <header class="panel-head">
+          <div><span class="eyebrow">Satchel of the Tenth</span><h2>Inventory</h2></div>
+          <div class="panel-resources"><span class="coin-ico"></span><b id="inv-gold">0</b><span class="cap">carrying <b id="inv-weight">0</b>/40</span></div>
+          <button class="close-x" data-close="inventory">✕</button>
+        </header>
+        <div class="inv-body">
+          <div class="equipment">
+            <h3>Equipped</h3>
+            <div class="equip-slots">
+              <div class="equip-slot" data-slot="weapon"><span class="slot-label">Weapon</span><div class="equip-ico" id="eq-weapon"></div></div>
+              <div class="equip-slot" data-slot="armor"><span class="slot-label">Armor</span><div class="equip-ico" id="eq-armor"></div></div>
+              <div class="equip-slot" data-slot="trinket"><span class="slot-label">Trinket</span><div class="equip-ico" id="eq-trinket"></div></div>
+              <div class="equip-slot" data-slot="bow"><span class="slot-label">Bow</span><div class="equip-ico" id="eq-bow"></div></div>
+            </div>
+            <div class="stats-card" id="stats-card"></div>
+          </div>
+          <div class="bag">
+            <div class="bag-head"><h3>Pack</h3><div class="tabs"><button class="active" data-filter="all">All</button><button data-filter="weapon">Arms</button><button data-filter="armor">Armor</button><button data-filter="potion">Potions</button><button data-filter="quest">Quest</button></div></div>
+            <div class="inv-grid" id="inv-grid"></div>
+          </div>
+        </div>
+        <footer class="panel-foot"><span>Click an item to equip or use. Shift-click to drop.</span><button class="btn gold small" data-close="inventory">Return</button></footer>
+      </div>
+    </section>
+
+    <!-- ============ SKILLS ============ -->
+    <section id="skills" class="screen overlay panel-screen">
+      <div class="panel wide">
+        <header class="panel-head">
+          <div><span class="eyebrow">Nine paths, one hunter</span><h2>Skills</h2></div>
+          <div class="skill-points">Skill points <b id="skill-points">0</b></div>
+          <button class="close-x" data-close="skills">✕</button>
+        </header>
+        <div class="skill-body" id="skill-body"></div>
+        <footer class="panel-foot"><span>Each rank sharpens a part of you. Choose with care — the snow remembers.</span><button class="btn gold small" data-close="skills">Return</button></footer>
+      </div>
+    </section>
+
+    <!-- ============ QUESTS ============ -->
+    <section id="quests" class="screen overlay panel-screen">
+      <div class="panel wide">
+        <header class="panel-head">
+          <div><span class="eyebrow">A ledger of small and terrible things</span><h2>Quest Log</h2></div>
+          <button class="close-x" data-close="quests">✕</button>
+        </header>
+        <div class="quest-body">
+          <div class="quest-list" id="quest-list"></div>
+          <div class="quest-detail" id="quest-detail"><div class="empty-note">Select a quest.</div></div>
+        </div>
+        <footer class="panel-foot"><span>Press J to close. Tracked quests appear on your compass.</span><button class="btn gold small" data-close="quests">Return</button></footer>
+      </div>
+    </section>
+
+    <!-- ============ MAP ============ -->
+    <section id="map" class="screen overlay panel-screen">
+      <div class="panel wide map-panel">
+        <header class="panel-head">
+          <div><span class="eyebrow">Ink, snow, and questionable cartography</span><h2>Catterfall</h2></div>
+          <div class="map-legend"><span><i class="lg player"></i>You</span><span><i class="lg main"></i>Main</span><span><i class="lg side"></i>Side</span><span><i class="lg town"></i>Hold</span></div>
+          <button class="close-x" data-close="map">✕</button>
+        </header>
+        <div class="map-body">
+          <canvas id="map-canvas"></canvas>
+          <div class="map-side">
+            <h3 id="map-loc">Whiskerhold</h3>
+            <p id="map-desc">The nine-belled city, built where the river refuses to freeze.</p>
+            <div class="map-markers" id="map-markers"></div>
+          </div>
+        </div>
+        <footer class="panel-foot"><span>Click a marker to set your compass. M closes the map.</span><button class="btn gold small" data-close="map">Return</button></footer>
+      </div>
+    </section>
+
+    <!-- ============ SHOP ============ -->
+    <section id="shop" class="screen overlay panel-screen">
+      <div class="panel wide">
+        <header class="panel-head">
+          <div><span class="eyebrow" id="shop-eyebrow">Nine Lives Goods</span><h2 id="shop-name">Marrow &amp; Mittens</h2></div>
+          <div class="panel-resources"><span class="coin-ico"></span><b id="shop-gold">0</b></div>
+          <button class="close-x" data-close="shop">✕</button>
+        </header>
+        <div class="shop-body">
+          <div class="shop-col"><h3>Wares</h3><div class="shop-list" id="shop-buy"></div></div>
+          <div class="shop-col"><h3>Your Pack</h3><div class="shop-list" id="shop-sell"></div></div>
+        </div>
+        <footer class="panel-foot"><span id="shop-line">“Everything is negotiable except the fish.”</span><button class="btn gold small" data-close="shop">Leave</button></footer>
+      </div>
+    </section>
+
+    <!-- ============ PAUSE / SETTINGS ============ -->
+    <section id="pause" class="screen overlay">
+      <div class="pause-panel">
+        <div class="pause-crest"><svg viewBox="0 0 64 64" class="sigil"><path d="M10 26 6 6l18 10h16L58 6l-4 20c6 10 4 24-6 30-9 6-27 6-36 0C2 50 4 36 10 26Z"/><circle cx="23" cy="34" r="3.6"/><circle cx="41" cy="34" r="3.6"/><path d="M29 43h6l-3 4Z"/></svg></div>
+        <h2>Paused</h2>
+        <p class="pause-sub">The snow waits.</p>
+        <div class="pause-buttons">
+          <button class="btn gold" id="btn-resume">Resume</button>
+          <button class="btn ghost" id="btn-save">Save Game</button>
+          <button class="btn ghost" id="btn-pause-settings">Settings</button>
+          <button class="btn ghost" id="btn-help">Controls</button>
+          <button class="btn ghost danger" id="btn-quit">Abandon to Menu</button>
+        </div>
+        <div class="settings-box hidden" id="settings-box">
+          <label class="setting"><span>Music</span><input type="range" id="set-music" min="0" max="1" step="0.05" value="0.55"/></label>
+          <label class="setting"><span>Effects</span><input type="range" id="set-sfx" min="0" max="1" step="0.05" value="0.8"/></label>
+          <label class="setting"><span>Quality</span><select id="set-quality"><option value="low">Low</option><option value="medium" selected>Medium</option><option value="high">High</option></select></label>
+          <label class="setting"><span>Snow density</span><select id="set-snow"><option value="low">Light</option><option value="medium" selected>Steady</option><option value="high">Blizzard</option></select></label>
+          <label class="setting check"><span>Reduce motion</span><input type="checkbox" id="set-motion"/></label>
+        </div>
+        <div class="pause-foot"><span id="pause-save-note">Autosaves when you enter a hold or shrine.</span><span>v1.0 · Catterfall</span></div>
+      </div>
+    </section>
+
+    <!-- ============ HELP ============ -->
+    <section id="help" class="screen overlay panel-screen">
+      <div class="panel">
+        <header class="panel-head"><div><span class="eyebrow">Read this or be eaten</span><h2>How to Play</h2></div><button class="close-x" data-close="help">✕</button></header>
+        <div class="help-body">
+          <div class="help-grid">
+            <div><h3>On foot</h3><p><kbd>W A S D</kbd> move · <kbd>Shift</kbd> sprint · <kbd>Space</kbd> jump · <kbd>C</kbd> climb steep ground and walls · swim by walking into deep water.</p></div>
+            <div><h3>Battle</h3><p><kbd>LMB</kbd> strike · <kbd>RMB</kbd> block · <kbd>1–4</kbd> spells · <kbd>B</kbd> draw bow · <kbd>R</kbd> drink potion · <kbd>Tab</kbd> inventory.</p></div>
+            <div><h3>The world</h3><p><kbd>E</kbd> talk, loot, enter · <kbd>J</kbd> quest log · <kbd>M</kbd> map · <kbd>K</kbd> skills · <kbd>Esc</kbd> pause.</p></div>
+            <div><h3>Survival</h3><p>Health does not regenerate quickly. Eat, drink, rest at shrines, and keep warm milk potions close. Blocking costs stamina. Spells cost mana.</p></div>
+            <div><h3>The Ninth Life</h3><p>You are the Tenth — the cat outside the nine. Follow the main quest to gather the Ember and the Bell, recruit companions, and descend beneath Frostfang.</p></div>
+            <div><h3>Being a cat</h3><p>Climb things. Knock objects off ledges. Sit in boxes. The guards will pretend not to notice. Everyone here is a cat, and they are all very serious about it.</p></div>
+          </div>
+          <div class="help-controls"><span><kbd>F</kbd> pet a friendly cat</span><span><kbd>V</kbd> sheathe weapon</span><span><kbd>H</kbd> hide HUD</span><span><kbd>P</kbd> photo mode</span></div>
+        </div>
+        <footer class="panel-foot"><button class="btn gold small" data-close="help">Understood</button></footer>
+      </div>
+    </section>
+
+    <!-- ============ DEATH / VICTORY ============ -->
+    <section id="death" class="screen overlay dark">
+      <div class="end-panel">
+        <span class="eyebrow">The snow takes another</span>
+        <h2>You have run out of lives.</h2>
+        <p id="death-line">A cat always lands on their feet. Eventually.</p>
+        <button class="btn gold" id="btn-respawn">Wake at the last shrine</button>
+      </div>
+    </section>
+    <section id="victory" class="screen overlay dark">
+      <div class="end-panel victory">
+        <span class="eyebrow">The prophecy, fulfilled sideways</span>
+        <h2>The Empty Bowl is empty again.</h2>
+        <p id="victory-line">Catterfall will sing of the Tenth. Mostly off-key, but with feeling.</p>
+        <div class="victory-stats" id="victory-stats"></div>
+        <button class="btn gold" id="btn-victory-continue">Keep wandering</button>
+      </div>
+    </section>
+
+    <div id="photo-badge" class="hidden">PHOTO MODE · P to exit</div>
+  </div>
+</body>
+</html>
