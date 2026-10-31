@@ -7,6 +7,21 @@ const RELOAD_TIME = 1.85;
 const BASE_FOV = 74;
 const ADS_FOV = 52;
 
+// A tapered limb segment running from `from` to `to`. Used to connect the
+// viewmodel's gloves back to the player's sleeves so the rifle reads as held.
+function addLimb(group, from, to, rFrom, rTo, material) {
+  const dir = new THREE.Vector3().subVectors(to, from);
+  const len = dir.length();
+  const mesh = new THREE.Mesh(
+    new THREE.CylinderGeometry(rTo, rFrom, len, 8, 1),
+    material
+  );
+  mesh.position.copy(from).addScaledVector(dir, 0.5);
+  mesh.quaternion.setFromUnitVectors(UP, dir.normalize());
+  group.add(mesh);
+  return mesh;
+}
+
 function flashTexture() {
   const c = document.createElement('canvas');
   c.width = c.height = 128;
@@ -31,6 +46,9 @@ function buildRifle() {
   const accent = new THREE.MeshStandardMaterial({ color: 0xff8a2b, emissive: 0xb84a08, emissiveIntensity: 0.9, roughness: 0.4, metalness: 0.4 });
   const glove = new THREE.MeshStandardMaterial({ color: 0x241f1b, roughness: 0.95 });
   const knuckle = new THREE.MeshStandardMaterial({ color: 0x9a6533, roughness: 0.7, metalness: 0.2 });
+  const sleeve = new THREE.MeshStandardMaterial({ color: 0x45453c, roughness: 0.98, metalness: 0.02 });
+  const sleeveDark = new THREE.MeshStandardMaterial({ color: 0x2b2c27, roughness: 1 });
+  const cuff = new THREE.MeshStandardMaterial({ color: 0x6d5839, roughness: 0.85 });
 
   const body = new THREE.Mesh(new THREE.BoxGeometry(0.095, 0.12, 0.5), gunmetal);
   body.position.set(0, 0, -0.1);
@@ -112,6 +130,22 @@ function buildRifle() {
   leftHand.position.set(-0.01, -0.08, -0.44);
   leftHand.rotation.z = 0.18;
   group.add(leftHand);
+
+  // forearms and upper arms, running off the bottom of the frame so the
+  // rifle and gloves read as attached to a body instead of floating
+  const rightWrist = new THREE.Vector3(0.012, -0.155, 0.075);
+  const rightElbow = new THREE.Vector3(0.155, -0.47, 0.35);
+  const rightShoulder = new THREE.Vector3(0.36, -0.94, 0.64);
+  addLimb(group, rightWrist, rightElbow, 0.042, 0.058, sleeve);
+  addLimb(group, rightElbow, rightShoulder, 0.062, 0.082, sleeveDark);
+  addLimb(group, rightWrist, rightWrist.clone().lerp(rightElbow, 0.16), 0.049, 0.05, cuff);
+
+  const leftWrist = new THREE.Vector3(-0.012, -0.125, -0.425);
+  const leftElbow = new THREE.Vector3(-0.18, -0.45, 0.04);
+  const leftShoulder = new THREE.Vector3(-0.42, -0.95, 0.42);
+  addLimb(group, leftWrist, leftElbow, 0.04, 0.056, sleeve);
+  addLimb(group, leftElbow, leftShoulder, 0.06, 0.08, sleeveDark);
+  addLimb(group, leftWrist, leftWrist.clone().lerp(leftElbow, 0.16), 0.047, 0.048, cuff);
 
   // muzzle flash
   const flash = new THREE.Sprite(new THREE.SpriteMaterial({
