@@ -59,6 +59,9 @@ export class UI {
       endTotal: $('end-total'),
       mute: $('mute-btn'),
       markers: $('markers'),
+      padChip: $('pad-chip'),
+      padLabel: $('pad-label'),
+      padNote: $('pad-note'),
     };
 
     this.damageLevel = 0;
@@ -287,5 +290,13 @@ export class UI {
 
   setMuted(muted) {
     this.el.mute.classList.toggle('muted', muted);
+  }
+
+  setGamepad(connected, label = 'CONTROLLER') {
+    this.el.padChip?.classList.toggle('hidden', !connected);
+    this.el.padNote?.classList.toggle('hidden', !connected);
+    if (!connected) return;
+    if (this.el.padLabel) this.el.padLabel.textContent = label;
+    if (this.el.padChip) this.el.padChip.title = `Controller connected: ${label}`;
   }
 }

@@ -41,6 +41,11 @@ if (game) {
     }
   };
 
+  // Controller menu actions live here because the menu DOM state lives here.
+  game.openHelp = openHelp;
+  game.closeHelp = closeHelp;
+  game.isHelpOpen = () => !ui.el.help.classList.contains('hidden');
+
   startBtn.addEventListener('click', () => {
     game.audio.resume();
     game.audio.click();

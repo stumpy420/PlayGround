@@ -5,6 +5,7 @@ import { Drone, Bolt } from './enemies.js';
 import { Effects } from './effects.js';
 import { Pickup, CrystalNode, Crate, LOOT } from './loot.js';
 import { Audio } from './audio.js';
+import { Gamepad } from './gamepad.js';
 import {
   terrainHeight, HUB, REFINERY, ELEVATOR, clamp, rand, randInt, chance,
   formatAether, formatNumber,
@@ -84,6 +85,7 @@ export class Game {
     this.extraction = { active: false, timer: 0, total: EXTRACT_TIME, tick: 0 };
     this.hold = { id: null, t: 0 };
     this.interactTarget = null;
+    this.endAt = 0;
 
     this.raycaster = new THREE.Raycaster();
     this.raycaster.far = 300;
@@ -106,6 +108,16 @@ export class Game {
     this.dragging = false;
     this.locked = false;
     this.touch = { forward: 0, strafe: 0, fire: false, interact: false, ads: false };
+
+    this.gamepad = new Gamepad();
+    this.gamepad.onConnect = (pad) => {
+      this.ui.setGamepad(true, pad.label);
+      this.ui.toast(`CONTROLLER LINKED // ${pad.label}`, 'cyan');
+    };
+    this.gamepad.onDisconnect = () => {
+      this.ui.setGamepad(false);
+      this.ui.toast('CONTROLLER DISCONNECTED', 'danger');
+    };
 
     this.ui.setWallet(this.wallet);
     this.bindInput();
@@ -416,6 +428,9 @@ export class Game {
     const dt = Math.min(this.clock.getDelta(), 0.05);
     this.menuTime += dt;
 
+    this.gamepad.poll(dt);
+    this.handleGamepad(dt);
+
     if (this.state === 'playing') {
       this.time += dt;
       this.updatePlaying(dt);
@@ -465,13 +480,20 @@ export class Game {
 
   updatePlaying(dt) {
     const input = this.input;
-    input.forward = (this.keys.has('KeyW') ? 1 : 0) - (this.keys.has('KeyS') ? 1 : 0) + this.touch.forward;
-    input.strafe = (this.keys.has('KeyD') ? 1 : 0) - (this.keys.has('KeyA') ? 1 : 0) + this.touch.strafe;
-    input.sprint = this.keys.has('ShiftLeft') || this.keys.has('ShiftRight');
-    input.jump = this.keys.has('Space');
-    input.fire = this.firing || this.touch.fire;
-    input.ads = this.ads || this.touch.ads;
-    input.interact = this.interactHeld || this.touch.interact;
+    const pad = this.gamepad;
+    const padOn = pad.connected;
+    input.forward = (this.keys.has('KeyW') ? 1 : 0) - (this.keys.has('KeyS') ? 1 : 0) + this.touch.forward + (padOn ? -pad.moveY : 0);
+    input.strafe = (this.keys.has('KeyD') ? 1 : 0) - (this.keys.has('KeyA') ? 1 : 0) + this.touch.strafe + (padOn ? pad.moveX : 0);
+    input.sprint = this.keys.has('ShiftLeft') || this.keys.has('ShiftRight') || (padOn && pad.sprint);
+    input.jump = this.keys.has('Space') || (padOn && pad.jump);
+    input.fire = this.firing || this.touch.fire || (padOn && pad.fire);
+    input.ads = this.ads || this.touch.ads || (padOn && pad.aim);
+    input.interact = this.interactHeld || this.touch.interact || (padOn && pad.interact);
+
+    if (padOn && (pad.lookX !== 0 || pad.lookY !== 0)) {
+      // Right stick is rate-controlled: the deflection becomes turn speed.
+      this.player.look(pad.lookX * 900 * dt, pad.lookY * 820 * dt);
+    }
 
     this.player.update(dt, input, this.world.colliders);
     if (this.state !== 'playing') return;
@@ -522,6 +544,66 @@ export class Game {
 
     this.ui.updateMarkers(this.camera, true);
     this.updateHUD();
+  }
+
+  handleGamepad() {
+    const pad = this.gamepad;
+    if (!pad.connected) return;
+
+    // The field manual is a DOM overlay; controller Start/Back dismisses it.
+    const helpOpen = !!(this.isHelpOpen && this.isHelpOpen());
+    if (helpOpen) {
+      if (pad.start || pad.back) this.closeHelp?.();
+      return;
+    }
+
+    if (pad.help) {
+      if (this.state === 'playing') {
+        this.pause();
+        this.openHelp?.('pause');
+      } else if (this.state === 'paused') {
+        this.openHelp?.('pause');
+      } else if (this.state === 'menu') {
+        this.openHelp?.('start');
+      }
+      return;
+    }
+
+    if (pad.pause && this.state === 'playing') {
+      this.pause();
+      return;
+    }
+
+    if (pad.start) {
+      if (this.state === 'menu') {
+        this.startRun();
+        pad.consume('jump');
+        pad.consume('start');
+        return;
+      }
+      if (this.state === 'paused') {
+        this.resume();
+        pad.consume('start');
+        return;
+      }
+      if ((this.state === 'dead' || this.state === 'extracted')
+        && !this.ui.el.end.classList.contains('hidden')
+        && performance.now() - this.endAt > 800) {
+        this.startRun();
+        pad.consume('jump');
+        pad.consume('start');
+        return;
+      }
+    }
+
+    if (this.state !== 'playing') return;
+
+    if (pad.reload) this.player.reload();
+    if (pad.nextWeapon) this.player.cycleWeapon();
+    if (pad.prevWeapon) {
+      const count = this.player.weapons.length;
+      this.player.switchWeapon((this.player.weaponIndex + count - 1) % count);
+    }
   }
 
   updateDeath(dt) {
@@ -637,6 +719,7 @@ export class Game {
   onPlayerDamaged(amount) {
     this.ui.damage();
     this.audio.damage();
+    this.gamepad.rumble(120, Math.min(0.9, 0.35 + amount * 0.03), 0.45);
     if (this.player.health > 0 && this.player.health < 32 && this.time - this.lastFullToast > 8) {
       this.lastFullToast = this.time;
       this.ui.toast('INTEGRITY CRITICAL // BREAK CONTACT', 'danger');
@@ -647,8 +730,10 @@ export class Game {
     if (this.state !== 'playing') return;
     this.state = 'dead';
     this.deathT = 0;
+    this.endAt = performance.now();
     this.audio.death();
     this.audio.setStorm(false);
+    this.gamepad.rumble(420, 1, 0.8);
     this.ui.toast('SIGNAL LOST', 'danger');
     this.ui.setExtraction(false);
 
@@ -894,9 +979,11 @@ export class Game {
     if (this.state !== 'playing') return;
     this.state = 'extracted';
     this.extraction.active = false;
+    this.endAt = performance.now();
     this.world.lift.called = false;
     this.audio.success();
     this.audio.setStorm(false);
+    this.gamepad.rumble(260, 0.55, 0.65);
     this.ui.setExtraction(false);
     this.ui.setPrompt(null);
 
@@ -947,6 +1034,7 @@ export class Game {
     this.ui.showPause(false);
     this.state = 'dead';
     this.deathT = 0;
+    this.endAt = performance.now();
     this.ui.setExtraction(false);
     this.dropCargoAt(this.player.pos);
     this.wallet.runs++;

@@ -204,6 +204,7 @@ export class Player {
     this.roll += rand(-0.004, 0.004);
     this.shake = Math.min(1, this.shake + 0.16 * weapon.kick);
     this.game.audio.shot(weapon.sound);
+    this.game.gamepad?.rumble(weapon.sound === 'shotgun' ? 90 : 42, 0.2 * weapon.kick, 0.12 * weapon.kick);
     this.game.onPlayerShot();
   }
 
@@ -269,14 +270,15 @@ export class Player {
     // --- movement -------------------------------------------------
     const forward = input.forward || 0;
     const strafe = input.strafe || 0;
+    const wishMag = Math.min(1, Math.hypot(forward, strafe));
     let wishX = 0, wishZ = 0;
     if (forward || strafe) {
       const len = Math.hypot(forward, strafe);
       const f = forward / len;
       const s = strafe / len;
       const sin = Math.sin(this.yaw), cos = Math.cos(this.yaw);
-      wishX = s * cos - f * sin;
-      wishZ = -s * sin - f * cos;
+      wishX = (s * cos - f * sin) * wishMag;
+      wishZ = (-s * sin - f * cos) * wishMag;
     }
 
     const wantsSprint = input.sprint && forward > 0.1 && this.stamina > 1 && !this.ads;

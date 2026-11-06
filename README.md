@@ -51,6 +51,26 @@ In the OMGithub playground, `./start.sh` serves the same static site.
 | `Esc` | Pause |
 | `Touch` | On-screen stick, fire, reload and use buttons |
 
+### Controller
+
+Connect a standard-mapping gamepad (Xbox, DualShock/DualSense, Switch Pro, etc.) and press any
+button to link it. The HUD shows a controller badge when one is connected.
+
+| Gamepad | Action |
+| --- | --- |
+| Left stick | Move (full deflection auto-sprints) |
+| Right stick | Look / aim |
+| `RT` | Fire |
+| `LT` | Aim down sights |
+| `A` | Jump / confirm |
+| `B` | Reload / back |
+| `X` | Interact / mine / call lift (hold) |
+| `Y` / bumpers | Cycle weapons |
+| `L3` | Sprint |
+| D-pad left/right | Previous / next weapon |
+| `VIEW` | Field manual |
+| `START` | Pause / resume |
+
 ### Loadout
 
 - **VK-7 "Scrapper"** — 30-round assault rifle, balanced damage and recoil.
