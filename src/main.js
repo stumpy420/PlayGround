@@ -1176,9 +1176,9 @@ function bizAction(act, arg, b) {
   if (act === 'activity') {
     if (arg === 'pool') { if (p.money < 10) return noCash(); p.money -= 10; state.time.minutes += 60; p.mood = clamp(p.mood + 8, 0, 100); ui.toast('<b>POOL</b> · You lose. The bartender says you have “promising geometry.”', ''); }
     else if (arg === 'underground') { ui.showEvent('THE UNDERGROUND','Theo lowers his voice. “There’s a fight every night under Terminal 9. No names. No insurance.”'); state.weirdness = clamp(state.weirdness + .02, 0, 1); }
-    else if (arg === 'table') { p.money -= 18; state.time.minutes += 45; p.hunger = clamp(p.hunger + 35, 0, 100); p.mood = clamp(p.mood + 12, 0, 100); ui.toast('<b>DINNER</b> · You watch the rain. It watches back.', ''); }
-    else if (arg === 'shower') { p.money -= 5; p.hygiene = 100; state.time.minutes += 20; ui.toast('<b>SHOWER</b> · You smell like a person again.', ''); }
-    else if (arg === 'dance') { p.money -= 10; p.mood = clamp(p.mood + 18, 0, 100); p.energy = clamp(p.energy - 12, 0, 100); state.time.minutes += 90; ui.toast('<b>STATIC</b> · The bass gets into your teeth. You feel briefly immortal.', ''); }
+    else if (arg === 'table') { if (p.money < 18) return noCash(); p.money -= 18; state.time.minutes += 45; p.hunger = clamp(p.hunger + 35, 0, 100); p.mood = clamp(p.mood + 12, 0, 100); ui.toast('<b>DINNER</b> · You watch the rain. It watches back.', ''); }
+    else if (arg === 'shower') { if (p.money < 5) return noCash(); p.money -= 5; p.hygiene = 100; state.time.minutes += 20; ui.toast('<b>SHOWER</b> · You smell like a person again.', ''); }
+    else if (arg === 'dance') { if (p.money < 10) return noCash(); p.money -= 10; p.mood = clamp(p.mood + 18, 0, 100); p.energy = clamp(p.energy - 12, 0, 100); state.time.minutes += 90; ui.toast('<b>STATIC</b> · The bass gets into your teeth. You feel briefly immortal.', ''); }
     else if (arg === 'company') {
       if (p.money < 80) return noCash();
       p.money -= 80; p.mood = clamp(p.mood + 22, 0, 100); p.energy = clamp(p.energy - 10, 0, 100); state.time.minutes += 180;
@@ -2168,7 +2168,7 @@ function openEndingChoices() {
   const allBosses = BOSSES.every(b => f.bossesDefeated.includes(b.id));
   const maxRomance = Math.max(0, ...Object.values(state.relationships).map(r => r.romance || 0));
   const opts = [
-    { id:'escape', title:'ESCAPE THE SIMULATION', desc:'Board the bus that is not on the schedule. Leave Bellingham and never find out who wins.', ok:f.artifacts.includes('token') && (state.relationships.wren?.affinity || 0) >= 15, req:'Brass Bus Token · Wren friendship · less than 50% control' },
+    { id:'escape', title:'ESCAPE THE SIMULATION', desc:'Board the bus that is not on the schedule. Leave Bellingham and never find out who wins.', ok:f.artifacts.includes('token') && (state.relationships.wren?.affinity || 0) >= 15, req:'Brass Bus Token · Wren friendship' },
     { id:'champion', title:'BECOME CHAMPION', desc:'Take the belt, the money, and the key to the city. Let everyone see you.', ok:allBosses, req:'Defeat all ten bosses · high reputation' },
     { id:'shutdown', title:'SHUT IT DOWN', desc:'Find the server room beneath Terminal 9. Pull the brass lever. Let the city exhale.', ok:f.artifacts.length >= 3 && f.mirrorDefeated && f.truthRevealed, req:'Three artifacts · Mirror defeated · truth revealed' },
     { id:'control', title:'TAKE CONTROL', desc:'Sit in the chair. Edit one small thing. Then another. Then the rain.', ok:(f.darkRep || 0) > 0 && f.quietTable && f.futureDefeated, req:'Quiet Table alliance · dark reputation · Future Player defeated' },

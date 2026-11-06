@@ -321,7 +321,7 @@ export const ENDINGS = [
   {
     id:'escape', title:'THE 5:14 TO NOWHERE', kicker:'ENDING 01 / ESCAPE',
     text:'You board the bus that is not on the schedule. Wren does not ask for fare. The city folds behind you like a wet map. Somewhere in the rain, a barista says “Round two” to an empty room. You never find out who wins. You never go back.',
-    req:'Requires: Brass Bus Token · Wren friendship · less than 50% simulation control.'
+    req:'Requires: Brass Bus Token · Wren friendship.'
   },
   {
     id:'champion', title:'THE LAST CHAMPION', kicker:'ENDING 02 / CHAMPION',
