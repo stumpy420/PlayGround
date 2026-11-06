@@ -7,6 +7,9 @@ import { Pickup, CrystalNode, Crate, LOOT } from './loot.js';
 import { Audio } from './audio.js';
 import { Gamepad } from './gamepad.js';
 import {
+  CampaignRun, loadCampaignProgress, saveCampaignProgress, MISSIONS,
+} from './campaign.js';
+import {
   terrainHeight, HUB, REFINERY, ELEVATOR, clamp, rand, randInt, chance,
   formatAether, formatNumber,
 } from './util.js';
@@ -42,6 +45,11 @@ export class Game {
     this.canvas = canvas;
     this.ui = ui;
     this.wallet = loadWallet();
+    this.campaignProgress = loadCampaignProgress();
+    this.mode = 'menu';
+    this.campaign = null;
+    this.campaignResult = null;
+    this.briefingIndex = this.campaignProgress.mission;
     this.audio = new Audio();
     this.state = 'menu';
     this.time = 0;
@@ -120,6 +128,7 @@ export class Game {
     };
 
     this.ui.setWallet(this.wallet);
+    this.ui.setCampaignProgress(this.campaignProgress);
     this.bindInput();
     this.bindResize();
 
@@ -335,18 +344,53 @@ export class Game {
   /* Run lifecycle                                                     */
   /* ---------------------------------------------------------------- */
   startRun() {
+    this.beginRun('free');
+  }
+
+  startCampaign(index = null) {
+    const progress = this.campaignProgress;
+    // Replaying after an ending starts a fresh loop.
+    if (progress.ending) {
+      progress.mission = 0;
+      progress.completed = 0;
+      progress.ending = null;
+    }
+    const missionIndex = clamp(
+      index == null ? progress.mission : Math.floor(Number(index) || 0),
+      0, MISSIONS.length - 1
+    );
+    progress.mission = missionIndex;
+    saveCampaignProgress(progress);
+    this.ui.setCampaignProgress(progress);
+    this.beginRun('campaign', missionIndex);
+  }
+
+  beginRun(mode, missionIndex = 0) {
     this.audio.resume();
     this.ui.showStart(false);
     this.ui.showHelp(false);
+    this.ui.hideBriefing();
     this.ui.hideEnd();
     this.ui.showPause(false);
     this.ui.showHUD(true);
     this.ui.setExtraction(false);
     this.ui.setPrompt(null);
 
+    if (this.campaign) {
+      this.campaign.dispose();
+      this.campaign = null;
+    }
+    this.ui.clearComms();
+    this.ui.setBoss(false);
+    this.ui.clearWaypoint();
+    this.ui.setMission(null);
+
+    this.mode = mode;
+    this.campaignResult = null;
     this.state = 'playing';
     this.time = 0;
     this.deathT = 0;
+    this.lastAwayToast = 0;
     this.run = { scrap: 0, cores: 0, mass: 0, kills: 0 };
     this.extraction = { active: false, timer: 0, total: EXTRACT_TIME, tick: 0 };
     this.hold = { id: null, t: 0 };
@@ -358,12 +402,94 @@ export class Game {
     this.player.setVisible(true);
     this.clearEntities();
     this.resetLoot();
-    this.spawnInitialDrones();
 
-    this.ui.setObjective('REACH LIFT 04 // EXTRACT YOUR CARGO');
+    if (mode === 'campaign') {
+      this.campaign = new CampaignRun(this, missionIndex);
+      this.campaign.start();
+    } else {
+      this.spawnInitialDrones();
+      this.ui.setObjective('REACH LIFT 04 // EXTRACT YOUR CARGO');
+    }
+
     this.ui.setWallet(this.wallet);
     this.updateHUD();
     this.requestLock();
+  }
+
+  showBriefing(index = null) {
+    const progress = this.campaignProgress;
+    const i = clamp(
+      index == null ? progress.mission : Math.floor(Number(index) || 0),
+      0, MISSIONS.length - 1
+    );
+    this.briefingIndex = i;
+    this.returnToMenu(true);
+    this.ui.showBriefing(MISSIONS[i], progress);
+  }
+
+  deployBriefing() {
+    this.ui.hideBriefing();
+    this.audio.click();
+    this.startCampaign(this.briefingIndex);
+  }
+
+  closeBriefing() {
+    this.ui.hideBriefing();
+    this.audio.click();
+    this.returnToMenu();
+  }
+
+  returnToMenu(keepStartHidden = false) {
+    if (this.campaign) {
+      this.campaign.dispose();
+      this.campaign = null;
+    }
+    this.mode = 'menu';
+    this.campaignResult = null;
+    this.state = 'menu';
+    this.deathT = 0;
+    this.clearEntities();
+    this.resetLoot();
+    this.spawnInitialDrones();
+
+    this.player.reset();
+    this.player.setVisible(false);
+    this.ui.hideEnd();
+    this.ui.hideBriefing();
+    this.ui.showHUD(false);
+    this.ui.showPause(false);
+    this.ui.showHelp(false);
+    this.ui.setExtraction(false);
+    this.ui.setPrompt(null);
+    this.ui.clearComms();
+    this.ui.setBoss(false);
+    this.ui.clearWaypoint();
+    this.ui.setMission(null);
+    this.ui.setCampaignProgress(this.campaignProgress);
+    this.ui.showStart(!keepStartHidden);
+
+    if (document.pointerLockElement) document.exitPointerLock();
+    this.locked = false;
+  }
+
+  redeploy() {
+    this.ui.hideEnd();
+    if (this.mode === 'campaign' && this.campaignResult) {
+      const result = this.campaignResult;
+      if (result.kind === 'menu') {
+        this.returnToMenu();
+        return;
+      }
+      if (result.kind === 'next') {
+        this.showBriefing(result.index);
+        return;
+      }
+      if (result.kind === 'retry') {
+        this.startCampaign(result.index);
+        return;
+      }
+    }
+    this.startRun();
   }
 
   clearEntities() {
@@ -527,14 +653,19 @@ export class Game {
     this.updateExtraction(dt);
     if (this.state !== 'playing') return;
 
-    for (let i = this.respawnQueue.length - 1; i >= 0; i--) {
-      const r = this.respawnQueue[i];
-      r.t -= dt;
-      if (r.t <= 0) {
-        this.respawnQueue.splice(i, 1);
-        if (this.enemies.filter((e) => e.alive).length < 9) {
-          const p = this.randomSpawnPoint();
-          this.spawnDrone(p.x, p.z, chance(0.22) ? 'heavy' : 'scout');
+    if (this.campaign) this.campaign.update(dt);
+    if (this.state !== 'playing') return;
+
+    if (this.mode !== 'campaign') {
+      for (let i = this.respawnQueue.length - 1; i >= 0; i--) {
+        const r = this.respawnQueue[i];
+        r.t -= dt;
+        if (r.t <= 0) {
+          this.respawnQueue.splice(i, 1);
+          if (this.enemies.filter((e) => e.alive).length < 9) {
+            const p = this.randomSpawnPoint();
+            this.spawnDrone(p.x, p.z, chance(0.22) ? 'heavy' : 'scout');
+          }
         }
       }
     }
@@ -549,6 +680,19 @@ export class Game {
   handleGamepad() {
     const pad = this.gamepad;
     if (!pad.connected) return;
+
+    const briefOpen = !!(this.isBriefingOpen && this.isBriefingOpen());
+    if (briefOpen) {
+      if (pad.start) {
+        this.deployBriefing?.();
+        pad.consume('jump');
+        pad.consume('start');
+      } else if (pad.back) {
+        this.closeBriefing?.();
+        pad.consume('back');
+      }
+      return;
+    }
 
     // The field manual is a DOM overlay; controller Start/Back dismisses it.
     const helpOpen = !!(this.isHelpOpen && this.isHelpOpen());
@@ -576,7 +720,8 @@ export class Game {
 
     if (pad.start) {
       if (this.state === 'menu') {
-        this.startRun();
+        if (this.openBriefing) this.openBriefing();
+        else this.startCampaign();
         pad.consume('jump');
         pad.consume('start');
         return;
@@ -589,7 +734,7 @@ export class Game {
       if ((this.state === 'dead' || this.state === 'extracted')
         && !this.ui.el.end.classList.contains('hidden')
         && performance.now() - this.endAt > 800) {
-        this.startRun();
+        this.redeploy();
         pad.consume('jump');
         pad.consume('start');
         return;
@@ -626,7 +771,9 @@ export class Game {
     this.ui.setCrosshair(clamp(p.currentSpread() * 22, 0, 1));
     this.ui.setStorm(this.storm.active, this.storm.timer, !this.storm.active && this.storm.timer < 12);
 
-    if (this.extraction.active) {
+    if (this.mode === 'campaign' && this.campaign) {
+      // The CampaignRun owns objective text; it updates after this HUD pass.
+    } else if (this.extraction.active) {
       this.ui.setObjective(`HOLD THE PAD // ASCENT ${Math.ceil(this.extraction.timer)}S`);
     } else if (this.run.cores > 0) {
       this.ui.setObjective(`CARGO: ${this.run.cores} CORE${this.run.cores > 1 ? 'S' : ''} // GET TO LIFT 04`);
@@ -736,6 +883,14 @@ export class Game {
     this.gamepad.rumble(420, 1, 0.8);
     this.ui.toast('SIGNAL LOST', 'danger');
     this.ui.setExtraction(false);
+    this.ui.setBoss(false);
+    this.ui.clearComms();
+
+    let campaign = null;
+    if (this.mode === 'campaign' && this.campaign) {
+      campaign = this.campaign.failInfo();
+      this.campaignResult = { kind: 'retry', index: campaign.retryIndex };
+    }
 
     // gear spills into the world (flavour for the extraction pool)
     this.dropCargoAt(this.player.pos);
@@ -755,8 +910,9 @@ export class Game {
         cores: 0,
         aether: 0,
         total: 0,
+        campaign,
       });
-      this.ui.setObjective('RUN TERMINATED');
+      this.ui.setObjective(campaign ? 'OPERATION FAILED // RETRY AVAILABLE' : 'RUN TERMINATED');
     }, 1200);
   }
 
@@ -764,6 +920,7 @@ export class Game {
     this.run.kills++;
     this.audio.hit(true);
     const heavy = drone.heavy;
+    if (this.campaign) this.campaign.onKill(drone);
     this.ui.toast(heavy ? 'HEAVY DRONE DESTROYED' : 'SCOUT DRONE DESTROYED', 'cyan');
 
     const base = drone.group.position;
