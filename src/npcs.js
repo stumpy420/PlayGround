@@ -276,6 +276,8 @@ export class NPCSystem {
     this.updateSchedule();
     const p = playerPos;
     for (const npc of [...this.npcs, ...this.ambient]) {
+      // Combat owns the active opponent's position and animation; schedules must not overwrite its AI.
+      if (npc.combat) continue;
       if (this.frozen.has(npc.id)) {
         this.animateIdle(npc, dt, true);
         continue;
