@@ -1,0 +1,214 @@
+:root {
+  --bg: #060b13;
+  --panel: rgba(11, 20, 32, 0.7);
+  --panel-border: rgba(128, 208, 255, 0.25);
+  --gold: #f9d57c;
+  --red: #f86a6a;
+  --green: #7cefb1;
+  --cyan: #8cd8ff;
+  --text: #eaf6ff;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html, body {
+  margin: 0;
+  min-height: 100%;
+  height: 100%;
+  background:
+    radial-gradient(circle at top, rgba(20, 42, 65, 0.9), rgba(3, 9, 16, 0.96) 52%),
+    linear-gradient(180deg, #080d16, #04070d 72%);
+  color: var(--text);
+  font-family: Inter, "Segoe UI", sans-serif;
+  overflow: hidden;
+}
+
+body {
+  display: grid;
+  place-items: center;
+}
+
+#game {
+  display: block;
+  width: min(96vw, 1280px);
+  height: auto;
+  max-height: 72vh;
+  aspect-ratio: 16 / 9;
+  background: #050b12;
+  border: 1px solid rgba(133, 192, 233, 0.3);
+  border-radius: 16px;
+  box-shadow: 0 25px 80px rgba(0, 0, 0, 0.45);
+}
+
+.hud {
+  position: fixed;
+  top: 18px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: min(92vw, 1100px);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 16px 18px;
+  background: rgba(6, 15, 21, 0.48);
+  border: 1px solid var(--panel-border);
+  border-radius: 14px;
+  backdrop-filter: blur(8px);
+  z-index: 2;
+  pointer-events: none;
+}
+
+.title-wrap {
+  display: flex;
+  flex-direction: column;
+}
+
+.title {
+  font-size: clamp(1rem, 2vw, 1.8rem);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  font-weight: 800;
+  color: var(--gold);
+  text-shadow: 0 0 12px rgba(249, 213, 124, 0.45);
+}
+
+.subtitle {
+  font-size: 0.74rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: rgba(224, 240, 255, 0.7);
+}
+
+.stats {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.stat-box {
+  min-width: 100px;
+  padding: 8px 10px;
+  border-radius: 10px;
+  background: rgba(15, 30, 43, 0.75);
+  border: 1px solid rgba(141, 211, 255, 0.25);
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  align-items: center;
+}
+
+.label {
+  font-size: 0.68rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: rgba(170, 214, 245, 0.72);
+}
+
+.message {
+  position: fixed;
+  left: 50%;
+  bottom: 24px;
+  transform: translateX(-50%);
+  background: rgba(8, 19, 28, 0.7);
+  border: 1px solid rgba(160, 209, 255, 0.3);
+  border-radius: 10px;
+  padding: 10px 16px;
+  font-size: 0.9rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--cyan);
+  z-index: 2;
+}
+
+.touch-controls {
+  display: none;
+}
+
+.touch-controls button {
+  min-width: 46px;
+  min-height: 46px;
+  border: 1px solid rgba(141, 211, 255, 0.42);
+  border-radius: 14px;
+  background: rgba(8, 20, 32, 0.82);
+  color: var(--text);
+  font: inherit;
+  font-weight: 700;
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+@media (pointer: coarse) {
+  .touch-controls {
+    position: fixed;
+    left: max(16px, env(safe-area-inset-left));
+    right: max(16px, env(safe-area-inset-right));
+    bottom: max(16px, env(safe-area-inset-bottom));
+    display: flex;
+    justify-content: space-between;
+    align-items: end;
+    z-index: 3;
+    pointer-events: none;
+  }
+
+  .touch-controls button {
+    pointer-events: auto;
+  }
+
+  .dpad {
+    display: grid;
+    grid-template-columns: repeat(3, 46px);
+    grid-template-rows: repeat(2, 46px);
+    gap: 5px;
+  }
+
+  .dpad [data-key="KeyW"] { grid-column: 2; grid-row: 1; }
+  .dpad [data-key="KeyA"] { grid-column: 1; grid-row: 2; }
+  .dpad [data-key="KeyS"] { grid-column: 2; grid-row: 2; }
+  .dpad [data-key="KeyD"] { grid-column: 3; grid-row: 2; }
+
+  .action-buttons {
+    display: flex;
+    gap: 9px;
+  }
+
+  .action-buttons button {
+    min-width: 64px;
+    color: var(--green);
+  }
+
+  .action-buttons [data-action="slash"] {
+    color: var(--gold);
+  }
+
+  .message {
+    bottom: max(130px, calc(env(safe-area-inset-bottom) + 115px));
+  }
+}
+
+@media (max-width: 700px) {
+  .hud {
+    top: 10px;
+    width: 94vw;
+    padding: 12px 14px;
+  }
+
+  .stats {
+    gap: 6px;
+  }
+
+  .stat-box {
+    min-width: 72px;
+    padding: 6px 8px;
+  }
+
+  .message {
+    bottom: max(130px, calc(env(safe-area-inset-bottom) + 115px));
+    width: min(90vw, 420px);
+    text-align: center;
+    font-size: 0.72rem;
+  }
+}
