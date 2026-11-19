@@ -16,3 +16,36 @@
 - 👤 [Explore the creator's projects](https://go.ondev.store/stumpy420).
 - 🌍 [Create with OMGithub](https://go.ondev.store/).
 <!-- omgithub:readme:end -->
+
+---
+
+## SENTINEL PROTOCOL
+
+A browser-native 5v5 tactical FPS built with Three.js. The vertical slice includes three modes (Team Deathmatch, Domination, Blackout), bot AI, a Neon Harbor arena, loadout/camos, battle pass, armory, wallet, match rewards, and Android touch controls.
+
+### Run locally
+
+```bash
+PORT=3002 bash start.sh
+# or any static server:
+python3 -m http.server 3002
+# open http://localhost:3002/
+```
+
+Deep links for capture/QA:
+
+- `/?screen=store`, `/?screen=wallet`, `/?screen=loadout`, `/?screen=dossier`
+- `/?play=tdm`, `/?play=dom`, `/?play=blackout` (add `&autofire=1` for a hands-free combat check)
+
+### Controls
+
+- **Desktop:** WASD move, mouse look, LMB fire, RMB aim, R reload, Space jump, Ctrl/C crouch-slide, Shift sprint, G frag, V melee, Q swap, Esc pause.
+- **Android:** dual-stick touch controls, auto-fire, aim assist, safe-area layout, and a landscape recommendation.
+
+### Demo boundaries
+
+- Bots simulate the opposing team; there is no real multiplayer server.
+- Stripe checkout is a UI demo and never transmits card data.
+- $SRN balances and settlement are stored locally and simulated. `js/web3.js` contains an optional ethers.js Polygon wallet/ERC-20 bridge, disabled by default.
+- The design dossier is in [`DESIGN.md`](./DESIGN.md) and is rendered in-game under **DOSSIER**.
+

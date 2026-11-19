@@ -1,0 +1,480 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+<meta name="theme-color" content="#06090c" />
+<meta name="description" content="SENTINEL PROTOCOL — a browser-native tactical FPS with on-chain match rewards." />
+<title>SENTINEL PROTOCOL // BLACKSITE</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' fill='%2306090c'/%3E%3Ctext x='16' y='23' font-family='monospace' font-size='18' font-weight='700' text-anchor='middle' fill='%235ce8d4'%3ES%3C/text%3E%3C/svg%3E" />
+<link rel="stylesheet" href="assets/fonts/local.css" />
+<link rel="stylesheet" href="css/style.css" />
+<script type="importmap">
+{ "imports": { "three": "./vendor/three.module.js", "three/addons/": "./vendor/addons/" } }
+</script>
+</head>
+<body>
+
+<div id="app">
+  <canvas id="scene"></canvas>
+
+  <!-- ============ BOOT ============ -->
+  <div id="boot" class="screen boot">
+    <div class="boot-inner">
+      <div class="boot-mark">S<span>/</span>P</div>
+      <div class="boot-title">SENTINEL PROTOCOL</div>
+      <div class="boot-sub">BLACKSITE // TACTICAL NETWORK</div>
+      <div class="boot-bar"><i id="boot-fill"></i></div>
+      <div class="boot-status" id="boot-status">INITIALIZING RENDER PIPELINE</div>
+    </div>
+  </div>
+
+  <!-- ============ MAIN MENU ============ -->
+  <div id="menu" class="screen menu hidden">
+    <div class="menu-shade"></div>
+    <div class="topbar">
+      <div class="brand">
+        <div class="brand-mark">S<span>/</span>P</div>
+        <div class="brand-text">
+          <b>SENTINEL PROTOCOL</b>
+          <small>BLACKSITE OPERATIONS</small>
+        </div>
+      </div>
+      <nav class="mainnav" id="mainnav">
+        <button class="navbtn active" data-screen="play">DEPLOY</button>
+        <button class="navbtn" data-screen="loadout">LOADOUT</button>
+        <button class="navbtn" data-screen="store">ARMORY</button>
+        <button class="navbtn" data-screen="wallet">WALLET</button>
+        <button class="navbtn" data-screen="dossier">DOSSIER</button>
+      </nav>
+      <div class="profile-chip">
+        <div class="rank-badge" id="menu-level">1</div>
+        <div class="profile-meta">
+          <b id="menu-callsign">RECRUIT-01</b>
+          <small><span class="cur-credit">◈</span> <span id="menu-credits">0</span> · <span class="cur-srn">$SRN</span> <span id="menu-srn">0.00</span></small>
+        </div>
+        <button class="icon-btn" id="btn-settings" title="Settings" aria-label="Settings">
+          <svg viewBox="0 0 24 24"><path d="M12 15.5A3.5 3.5 0 1 0 12 8.5a3.5 3.5 0 0 0 0 7Zm7.4-2.6.1-.9-.1-.9 2-1.5-2-3.4-2.3.9a7 7 0 0 0-1.6-.9L15.2 4h-4l-.3 2.2c-.6.2-1.1.5-1.6.9l-2.3-.9-2 3.4 2 1.5a7 7 0 0 0 0 1.8l-2 1.5 2 3.4 2.3-.9c.5.4 1 .7 1.6.9l.3 2.2h4l.3-2.2c.6-.2 1.1-.5 1.6-.9l2.3.9 2-3.4-2.1-1.5Z"/></svg>
+        </button>
+        <button class="icon-btn" id="btn-audio" title="Toggle audio" aria-label="Toggle audio">
+          <svg viewBox="0 0 24 24"><path d="M4 9v6h4l5 4V5L8 9H4Zm12.5 3a4.5 4.5 0 0 0-2.5-4v8a4.5 4.5 0 0 0 2.5-4Z"/></svg>
+        </button>
+      </div>
+    </div>
+
+    <div class="menu-body">
+      <div class="hero">
+        <div class="season-tag"><i></i> SEASON 04 · NEON HARBOR</div>
+        <h1 class="hero-title">SENTINEL<br><span>PROTOCOL</span></h1>
+        <p class="hero-copy">Tactical 5v5 combat on the Blacksite network. Every match settles on-chain. Every operator owns their loadout.</p>
+        <div class="hero-stats">
+          <div><b id="stat-matches">0</b><small>MATCHES</small></div>
+          <div><b id="stat-kills">0</b><small>ELIMINATIONS</small></div>
+          <div><b id="stat-wins">0</b><small>VICTORIES</small></div>
+          <div><b id="stat-wr">0%</b><small>WIN RATE</small></div>
+        </div>
+      </div>
+
+      <div class="deploy-panel">
+        <div class="panel-label">SELECT OPERATION</div>
+        <div class="mode-list" id="mode-list"></div>
+        <button class="btn btn-primary btn-deploy" id="btn-deploy">
+          <span>DEPLOY</span><small>SOLO QUEUE · BOTS SIM</small>
+        </button>
+        <div class="deploy-note"><span class="dot-live"></span> BLACKSITE UPLINK STABLE · 28 MS</div>
+      </div>
+    </div>
+
+    <div class="menu-footer">
+      <div class="ticker"><span id="ticker">SEASON 04 // NEON HARBOR — NEW MAP · RANKED RESET IN 06D 12H · $SRN REWARD POOL 1.2M</span></div>
+      <div class="footer-links">
+        <button class="linkbtn" data-screen="dossier">DESIGN DOSSIER</button>
+        <span>v1.0.0</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ LOADOUT ============ -->
+  <div id="loadout" class="screen overlay-screen hidden">
+    <div class="sub-header">
+      <button class="back-btn" data-back>‹</button>
+      <div><h2>LOADOUT</h2><small>CONFIGURE YOUR OPERATOR</small></div>
+      <div class="sub-wallet"><span class="cur-credit">◈</span><b data-credits>0</b><span class="cur-srn">$SRN</span><b data-srn>0.00</b></div>
+    </div>
+    <div class="loadout-grid">
+      <div class="op-preview panel">
+        <div class="panel-label">ACTIVE OPERATOR</div>
+        <div class="operator-card" id="operator-card">
+          <canvas id="operator-canvas" width="420" height="460"></canvas>
+          <div class="operator-scan"></div>
+        </div>
+        <div class="operator-name" id="operator-name">GHOST-7</div>
+        <div class="operator-role" id="operator-role">VANGUARD · ASSAULT</div>
+        <div class="operator-stats" id="operator-stats"></div>
+      </div>
+      <div class="loadout-main">
+        <div class="panel">
+          <div class="panel-label">PRIMARY WEAPON</div>
+          <div class="weapon-tabs" id="weapon-tabs"></div>
+          <div class="weapon-detail">
+            <div class="weapon-render"><canvas id="weapon-canvas" width="640" height="280"></canvas></div>
+            <div class="weapon-specs" id="weapon-specs"></div>
+          </div>
+        </div>
+        <div class="panel">
+          <div class="panel-label">WEAPON CAMO</div>
+          <div class="skin-row" id="skin-row"></div>
+        </div>
+        <div class="panel">
+          <div class="panel-label">BATTLE PASS <span class="bp-badge" id="bp-badge">TIER 1</span></div>
+          <div class="bp-progress"><i id="bp-bar"></i></div>
+          <div class="bp-meta"><span id="bp-xp">0 / 600 XP</span><span id="bp-premium-state">STANDARD TRACK</span></div>
+          <button class="btn btn-ghost btn-sm" id="btn-bp">VIEW SEASON TRACK</button>
+        </div>
+      </div>
+      <div class="loadout-side">
+        <div class="panel">
+          <div class="panel-label">SECONDARY</div>
+          <div class="secondary-card">
+            <b>P-9 SIDEARM</b><small>15 RDS · SEMI-AUTO</small>
+          </div>
+          <div class="panel-label mt">LETHAL</div>
+          <div class="secondary-card"><b>M67 FRAG</b><small>1 CHARGE · [G]</small></div>
+        </div>
+        <div class="panel">
+          <div class="panel-label">OPERATOR SKINS</div>
+          <div class="skin-row vertical" id="operator-skins"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ STORE ============ -->
+  <div id="store" class="screen overlay-screen hidden">
+    <div class="sub-header">
+      <button class="back-btn" data-back>‹</button>
+      <div><h2>ARMORY</h2><small>PREMIUM CONTENT · STRIPE SECURED</small></div>
+      <div class="sub-wallet"><span class="cur-credit">◈</span><b data-credits>0</b><button class="btn btn-mini" id="btn-topup">TOP UP</button></div>
+    </div>
+    <div class="store-hero">
+      <div>
+        <div class="season-tag"><i></i> FEATURED BUNDLE</div>
+        <h3>NEON HARBOR<br>OPERATOR PACK</h3>
+        <p>Legendary operator skin, 2 weapon camos, 5 battle pass tiers and 1,200 credits.</p>
+        <div class="price-line"><span class="cur-credit">◈</span><b>2,400</b><s>3,200</s><span class="save">SAVE 25%</span></div>
+        <button class="btn btn-primary" id="btn-bundle">ACQUIRE BUNDLE</button>
+      </div>
+      <div class="store-hero-art" id="hero-art">
+        <div class="holo-ring r1"></div><div class="holo-ring r2"></div>
+        <div class="hero-silhouette"></div>
+        <div class="hero-tag">LEGENDARY</div>
+      </div>
+    </div>
+    <div class="store-tabs" id="store-tabs">
+      <button class="tab active" data-cat="all">ALL</button>
+      <button class="tab" data-cat="camo">WEAPON CAMOS</button>
+      <button class="tab" data-cat="operator">OPERATORS</button>
+      <button class="tab" data-cat="pass">BATTLE PASS</button>
+      <button class="tab" data-cat="sub">SENTINEL+</button>
+    </div>
+    <div class="store-grid" id="store-grid"></div>
+  </div>
+
+  <!-- ============ WALLET ============ -->
+  <div id="wallet" class="screen overlay-screen hidden">
+    <div class="sub-header">
+      <button class="back-btn" data-back>‹</button>
+      <div><h2>WALLET</h2><small>NON-CUSTODIAL · POLYGON POS</small></div>
+      <div class="sub-wallet"><span class="cur-srn">$SRN</span><b data-srn>0.00</b></div>
+    </div>
+    <div class="wallet-grid">
+      <div class="panel wallet-balance">
+        <div class="panel-label">SETTLED BALANCE</div>
+        <div class="balance-big"><span class="cur-srn">$SRN</span> <span id="wallet-srn">0.00</span></div>
+        <div class="wallet-sub">≈ $<span id="wallet-usd">0.00</span> USD · POLYGON</div>
+        <div class="wallet-addr" id="wallet-addr">0x7A3f…9C21</div>
+        <div class="wallet-sub" id="wallet-chain">DEMO WALLET · LOCAL SIGNER</div>
+        <div class="wallet-actions">
+          <button class="btn btn-primary btn-sm" id="btn-claim">SETTLE PENDING REWARDS</button>
+          <button class="btn btn-ghost btn-sm" id="btn-connect">CONNECT WALLET</button>
+          <button class="btn btn-ghost btn-sm" id="btn-copy">COPY ADDRESS</button>
+        </div>
+        <div class="pending-box">
+          <div><small>PENDING (UNSETTLED)</small><b><span class="cur-srn">$SRN</span> <span id="wallet-pending">0.00</span></b></div>
+          <div><small>SEASON EARNED</small><b><span class="cur-srn">$SRN</span> <span id="wallet-season">0.00</span></b></div>
+          <div><small>NETWORK</small><b>POLYGON POS</b></div>
+          <div><small>GAS BALANCE</small><b>0.048 POL</b></div>
+        </div>
+      </div>
+      <div class="panel wallet-ledger">
+        <div class="panel-label">ON-CHAIN ACTIVITY</div>
+        <div class="tx-list" id="tx-list"></div>
+      </div>
+      <div class="panel wallet-info">
+        <div class="panel-label">HOW REWARDS WORK</div>
+        <ol class="flow-list">
+          <li><b>EARN</b><span>Place, eliminate, capture. Rewards accrue per match.</span></li>
+          <li><b>VERIFY</b><span>Server signs the match attestation; anti-cheat validates.</span></li>
+          <li><b>SETTLE</b><span>Batch transfer of $SRN on Polygon. You pay network gas only.</span></li>
+          <li><b>OWN</b><span>Tokens land in your non-custodial wallet. No lock-up.</span></li>
+        </ol>
+        <div class="contract-box">
+          <small>REWARD CONTRACT</small>
+          <code id="contract-address">0x4F2a...D91b</code>
+          <small>TOKEN</small>
+          <code>$SRN · ERC-20 · 18 DECIMALS</code>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ DOSSIER ============ -->
+  <div id="dossier" class="screen overlay-screen hidden">
+    <div class="sub-header">
+      <button class="back-btn" data-back>‹</button>
+      <div><h2>DESIGN DOSSIER</h2><small>SENTINEL PROTOCOL · GDD v1.0 · CONFIDENTIAL</small></div>
+      <div class="dossier-actions">
+        <button class="btn btn-ghost btn-sm" id="btn-dossier-top">TOP</button>
+      </div>
+    </div>
+    <div class="dossier-wrap">
+      <aside class="dossier-toc" id="dossier-toc"></aside>
+      <article class="dossier-doc" id="dossier-doc">
+        <div class="doc-loading">DECRYPTING DOSSIER…</div>
+      </article>
+    </div>
+  </div>
+
+  <!-- ============ HUD ============ -->
+  <div id="hud" class="screen hud hidden">
+    <div class="hud-vignette"></div>
+    <div class="lowhp" id="lowhp"></div>
+    <div class="dmg-flash" id="dmg-flash"></div>
+    <div class="scope-overlay" id="scope-overlay"><div class="scope-lens"></div></div>
+
+    <div class="hud-top">
+      <div class="team-score blue"><span class="ts-label">SENTINEL</span><b id="score-blue">0</b></div>
+      <div class="match-clock">
+        <div class="mode-name" id="hud-mode">TEAM DEATHMATCH</div>
+        <b id="hud-timer">05:00</b>
+        <div class="objective-pips" id="hud-objectives"></div>
+      </div>
+      <div class="team-score red"><b id="score-red">0</b><span class="ts-label">VANGUARD</span></div>
+    </div>
+
+    <div class="hud-left">
+      <div class="minimap-wrap">
+        <canvas id="minimap" width="220" height="220"></canvas>
+        <div class="minimap-frame"></div>
+        <div class="minimap-compass">N</div>
+      </div>
+      <div class="status-bars">
+        <div class="health-row"><span id="hud-health">100</span><div class="bar health"><i id="health-bar"></i></div></div>
+        <div class="stamina-row"><div class="bar stamina"><i id="stamina-bar"></i></div><small>STAMINA</small></div>
+      </div>
+    </div>
+
+    <div class="killfeed" id="killfeed"></div>
+    <div class="objective-banner" id="obj-banner"></div>
+    <div class="streak-banner" id="streak-banner"></div>
+
+    <div class="crosshair" id="crosshair">
+      <i class="ch t"></i><i class="ch b"></i><i class="ch l"></i><i class="ch r"></i>
+      <i class="ch-dot"></i>
+      <div class="hitmarker" id="hitmarker"><i></i><i></i><i></i><i></i></div>
+      <div class="hit-text" id="hit-text"></div>
+    </div>
+
+    <div class="hud-bottom">
+      <div class="bottom-left">
+        <div class="equipment" id="equipment">
+          <div class="equip lethal"><span>G</span><b>FRAG</b><i>1</i></div>
+          <div class="equip"><span>V</span><b>MELEE</b><i>∞</i></div>
+        </div>
+      </div>
+      <div class="ammo-block">
+        <div class="weapon-name" id="hud-weapon">VK-7 HAVOC</div>
+        <div class="ammo-row"><b id="hud-ammo">30</b><span id="hud-reserve">/ 150</span></div>
+        <div class="reload-hint" id="reload-hint">RELOADING</div>
+      </div>
+    </div>
+
+    <div class="hud-right">
+      <div class="reward-ticker"><span class="cur-srn">$SRN</span> <b id="hud-srn">0.00</b><small>THIS MATCH</small></div>
+      <div class="perf" id="perf">60 FPS</div>
+    </div>
+
+    <div class="damage-dirs" id="damage-dirs"></div>
+    <div class="death-overlay hidden" id="death-overlay">
+      <div class="death-card">
+        <small>ELIMINATED BY</small>
+        <b id="death-by">Viper</b>
+        <div class="death-weapon" id="death-weapon">VK-7 HAVOC</div>
+        <div class="respawn-bar"><i id="respawn-bar"></i></div>
+        <div class="respawn-text">REDEPLOYING <span id="respawn-sec">4</span>s</div>
+      </div>
+    </div>
+
+    <div class="touch-ui" id="touch-ui">
+      <div class="joystick" id="joystick"><div class="stick-base"><i id="stick-knob"></i></div></div>
+      <div class="touch-actions">
+        <button class="tbtn fire" id="btn-fire">FIRE</button>
+        <button class="tbtn ads" id="btn-ads">ADS</button>
+        <button class="tbtn jump" id="btn-jump">JUMP</button>
+        <button class="tbtn crouch" id="btn-crouch">SLIDE</button>
+        <button class="tbtn reload" id="btn-reload">RELOAD</button>
+        <button class="tbtn swap" id="btn-swap">SWAP</button>
+      </div>
+      <button class="tbtn pause-t" id="btn-pause-t">II</button>
+    </div>
+  </div>
+
+  <!-- ============ COUNTDOWN ============ -->
+  <div id="countdown" class="screen countdown hidden">
+    <div class="countdown-inner">
+      <div class="cd-mode" id="cd-mode">TEAM DEATHMATCH · NEON HARBOR</div>
+      <div class="cd-num" id="cd-num">3</div>
+      <div class="cd-sub" id="cd-sub">PREPARE FOR CONTACT</div>
+    </div>
+  </div>
+
+  <!-- ============ PAUSE ============ -->
+  <div id="pause" class="screen pause hidden">
+    <div class="pause-bg"></div>
+    <div class="pause-card">
+      <div class="boot-mark small">S<span>/</span>P</div>
+      <h2>OPERATION PAUSED</h2>
+      <p>Blacksite link held. Your squad is waiting.</p>
+      <button class="btn btn-primary" id="btn-resume">RESUME</button>
+      <button class="btn btn-ghost" id="btn-pause-settings">SETTINGS</button>
+      <button class="btn btn-danger-ghost" id="btn-abort">ABORT OPERATION</button>
+      <div class="pause-controls">
+        <span><kbd>WASD</kbd> MOVE</span><span><kbd>SHIFT</kbd> SPRINT</span><span><kbd>C</kbd> SLIDE</span>
+        <span><kbd>SPACE</kbd> JUMP</span><span><kbd>R</kbd> RELOAD</span><span><kbd>G</kbd> FRAG</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ SUMMARY ============ -->
+  <div id="summary" class="screen summary hidden">
+    <div class="summary-bg"></div>
+    <div class="summary-card">
+      <div class="summary-head">
+        <div>
+          <div class="season-tag"><i></i> OPERATION COMPLETE</div>
+          <h2 id="sum-result">VICTORY</h2>
+          <div class="sum-mode" id="sum-mode">TEAM DEATHMATCH · NEON HARBOR</div>
+        </div>
+        <div class="sum-score"><span id="sum-blue">50</span><em>:</em><span id="sum-red">37</span></div>
+      </div>
+      <div class="summary-grid">
+        <div class="sum-stats" id="sum-stats"></div>
+        <div class="sum-earnings">
+          <div class="panel-label">MATCH SETTLEMENT</div>
+          <div class="earn-row"><span>BASE REWARD</span><b id="earn-base">+40.00 $SRN</b></div>
+          <div class="earn-row"><span>ELIMINATIONS ×6</span><b id="earn-kills">+0.00 $SRN</b></div>
+          <div class="earn-row"><span>VICTORY BONUS</span><b id="earn-win">+120.00 $SRN</b></div>
+          <div class="earn-row"><span>OBJECTIVE BONUS</span><b id="earn-obj">+0.00 $SRN</b></div>
+          <div class="earn-total"><span>TOTAL</span><b id="earn-total">+160.00 $SRN</b></div>
+          <div class="xp-row"><span>BATTLE PASS XP</span><b id="sum-xp">+0</b></div>
+          <div class="xp-track"><i id="sum-xp-bar"></i></div>
+        </div>
+      </div>
+      <div class="summary-actions">
+        <button class="btn btn-ghost" id="btn-sum-wallet">SETTLE IN WALLET</button>
+        <button class="btn btn-ghost" id="btn-sum-hq">RETURN TO HQ</button>
+        <button class="btn btn-primary" id="btn-requeue">NEXT OPERATION</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ SETTINGS ============ -->
+  <div id="settings" class="screen settings hidden">
+    <div class="settings-card">
+      <div class="settings-head"><h2>SETTINGS</h2><button class="icon-btn" id="btn-settings-close">✕</button></div>
+      <div class="settings-body">
+        <div class="set-group">
+          <label>SENSITIVITY <b id="lbl-sens">50</b></label>
+          <input type="range" id="set-sens" min="10" max="100" value="50" />
+          <label>FIELD OF VIEW <b id="lbl-fov">80</b></label>
+          <input type="range" id="set-fov" min="65" max="105" value="80" />
+        </div>
+        <div class="set-group">
+          <label>GRAPHICS QUALITY</label>
+          <div class="seg" id="set-quality">
+            <button data-q="low">LOW</button><button data-q="medium" class="active">MEDIUM</button><button data-q="high">HIGH</button>
+          </div>
+          <label>MASTER VOLUME <b id="lbl-vol">65</b></label>
+          <input type="range" id="set-vol" min="0" max="100" value="65" />
+          <label>BOT DIFFICULTY</label>
+          <div class="seg" id="set-difficulty">
+            <button data-d="recruit">RECRUIT</button><button data-d="regular" class="active">REGULAR</button><button data-d="veteran">VETERAN</button>
+          </div>
+        </div>
+        <div class="set-group">
+          <label>TOUCH CONTROLS</label>
+          <div class="seg" id="set-touch">
+            <button data-t="auto" class="active">AUTO</button><button data-t="on">ALWAYS</button><button data-t="off">OFF</button>
+          </div>
+          <label class="check"><input type="checkbox" id="set-bloom" checked /> BLOOM &amp; POST FX</label>
+          <label class="check"><input type="checkbox" id="set-shake" checked /> CAMERA SHAKE</label>
+          <label class="check"><input type="checkbox" id="set-invert" /> INVERT LOOK Y</label>
+        </div>
+      </div>
+      <div class="settings-foot">
+        <button class="btn btn-danger-ghost btn-sm" id="btn-reset">RESET PROFILE</button>
+        <span>Changes apply immediately · saved locally</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ CHECKOUT MODAL ============ -->
+  <div id="checkout" class="screen modal hidden">
+    <div class="modal-card checkout-card">
+      <button class="modal-close" id="btn-checkout-close">✕</button>
+      <div class="checkout-brand">
+        <span class="stripe-word">stripe</span>
+        <small>SECURE CHECKOUT · DEMO MODE</small>
+      </div>
+      <div class="checkout-summary">
+        <div class="cs-icon" id="cs-icon">◈</div>
+        <div><b id="cs-name">1,000 CREDITS</b><small id="cs-desc">Sentinel Strike Credits</small></div>
+        <b id="cs-price">$9.99</b>
+      </div>
+      <div class="card-form">
+        <label>EMAIL</label>
+        <input type="email" id="cc-email" value="operator@blacksite.gg" />
+        <label>CARD NUMBER</label>
+        <div class="card-input">
+          <input id="cc-number" inputmode="numeric" maxlength="19" placeholder="4242 4242 4242 4242" value="4242 4242 4242 4242" />
+          <span class="card-brand">VISA</span>
+        </div>
+        <div class="card-split">
+          <div><label>EXPIRY</label><input id="cc-exp" maxlength="5" value="12/29" /></div>
+          <div><label>CVC</label><input id="cc-cvc" maxlength="4" value="424" /></div>
+          <div><label>POSTAL</label><input id="cc-zip" maxlength="8" value="10001" /></div>
+        </div>
+      </div>
+      <button class="btn btn-primary btn-pay" id="btn-pay">PAY <span id="pay-total">$9.99</span></button>
+      <div class="checkout-note"><span>🔒</span> Demo checkout. No card is charged. Production flow uses Stripe Checkout Sessions and signed webhooks.</div>
+    </div>
+  </div>
+
+  <!-- ============ TOASTS ============ -->
+  <div id="toasts" class="toasts"></div>
+
+  <div id="rotate-hint" class="rotate-hint hidden">
+    <div class="rot-icon">▭</div>
+    <b>ROTATE YOUR DEVICE</b>
+    <span>Landscape gives the full tactical view.</span>
+  </div>
+
+  <div id="fatal" class="fatal hidden">
+    <h2>RENDER FAILURE</h2>
+    <p id="fatal-msg"></p>
+  </div>
+</div>
+
+<script type="module" src="js/main.js"></script>
+</body>
+</html>
