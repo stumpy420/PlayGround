@@ -9,6 +9,7 @@ import { Effects } from './effects.js';
 import { Player } from './player.js';
 import { Bots } from './bots.js';
 import { UI } from './ui.js';
+import { GamepadInput } from './gamepad.js';
 import { economy } from './economy.js';
 import { MODES, CONTROL_POINTS, SPAWNS, WEAPONS, REWARDS } from './config.js';
 import { clamp, rand, pick, rayAABB, raySphere, makeAABB } from './util.js';
@@ -31,9 +32,13 @@ export class Game {
     this.profile = economy.profile;
     this.input = {
       forward: false, back: false, left: false, right: false, sprint: false, crouch: false,
-      jump: false, fire: false, ads: false, reload: false, swap: false, grenade: false, melee: false
+      jump: false, fire: false, ads: false, reload: false, swap: false, grenade: false, melee: false,
+      // Controller channels stay separate so pad and mouse/keyboard can mix cleanly.
+      moveX: 0, moveZ: 0, padSprint: false, padCrouch: false, padJump: false,
+      padFire: false, padAds: false, padReload: false, padSwap: false, padGrenade: false, padMelee: false
     };
     this.touch = { adsToggle: false };
+    this.inputMode = 'mk';
     this.keys = {};
     this.inMatch = false;
     this.paused = false;
@@ -69,6 +74,7 @@ export class Game {
     this.player = new Player(this);
     this.bots = new Bots(this);
     this.ui = new UI(this);
+    this.gamepad = new GamepadInput(this);
     this.setupComposer();
     this.loadoutApplied = false;
     this.player.applyLoadout();
@@ -227,7 +233,7 @@ export class Game {
   }
 
   requestLock() {
-    if (this.touchEnabled) return;
+    if (this.touchEnabled || this.gamepad?.active) return;
     try {
       const p = this.canvas.requestPointerLock?.();
       if (p && typeof p.catch === 'function') p.catch(() => {});
@@ -404,6 +410,14 @@ export class Game {
     this.paused = true;
     this.input.fire = false;
     this.input.ads = false;
+    this.input.padFire = false;
+    this.input.padAds = false;
+    this.input.padSprint = false;
+    this.input.padJump = false;
+    this.input.padReload = false;
+    this.input.padSwap = false;
+    this.input.padGrenade = false;
+    this.input.padMelee = false;
     document.getElementById('pause').classList.remove('hidden');
     document.exitPointerLock?.();
     this.ui.modalOpen = true;
@@ -414,7 +428,7 @@ export class Game {
     document.getElementById('pause').classList.add('hidden');
     document.getElementById('settings').classList.add('hidden');
     this.ui.modalOpen = false;
-    if (!this.touchEnabled) this.requestLock();
+    if (!this.touchEnabled && !this.gamepad?.active) this.requestLock();
   }
 
   abortMatch() {
@@ -681,7 +695,7 @@ export class Game {
       this.frameCount = 0;
       this.lastFpsUpdate = now;
       const perf = document.getElementById('perf');
-      if (perf) perf.textContent = `${this.fps} FPS · ${this.touchEnabled ? 'TOUCH' : 'M&K'}`;
+      if (perf) perf.textContent = `${this.fps} FPS · ${this.gamepad?.active ? 'CONTROLLER' : this.touchEnabled ? 'TOUCH' : 'M&K'}`;
     }
 
     if (this.matchState === 'menu') {
@@ -726,7 +740,7 @@ export class Game {
       this.timeRemaining = Math.max(0, this.timeRemaining - dt);
 
       // input release semantics
-      if (!this.input.fire) this.player.wasFiring = false;
+      if (!this.input.fire && !this.input.padFire) this.player.wasFiring = false;
 
       this.player.update(dt);
       this.bots.update(dt);
@@ -874,6 +888,11 @@ export class Game {
     this.matchState = 'over';
     this.input.fire = false;
     this.input.ads = false;
+    this.input.padFire = false;
+    this.input.padAds = false;
+    this.input.padSprint = false;
+    this.input.padJump = false;
+    this.input.padCrouch = false;
     document.exitPointerLock?.();
     this.ui.hideDeath();
     this.ui.setScope(false);
@@ -926,6 +945,8 @@ export class Game {
   loop() {
     requestAnimationFrame(() => this.loop());
     const dt = Math.min(0.05, this.clock.getDelta());
+    // Poll the pad even while paused so START / A can resume or navigate menus.
+    this.gamepad?.update(dt);
     if (!this.paused) this.update(dt);
     else this.render(dt);
   }

@@ -141,6 +141,13 @@ export class Player {
     this.reloading = false;
     this.swapEnd = 0;
     this.bloom = 0;
+    this.wasFiring = false;
+    const inp = this.game.input;
+    inp.padCrouch = false;
+    inp.padJump = false;
+    inp.padGrenade = false;
+    inp.padMelee = false;
+    inp.padSwap = false;
     if (!this.ammo[this.primaryId]) this.resetAmmo();
     else {
       this.ammo[this.primaryId].mag = WEAPONS[this.primaryId].mag;
@@ -187,12 +194,12 @@ export class Player {
     this.yawKick = damp(this.yawKick, 0, 9, dt);
     this.game.mouseVelX = damp(this.game.mouseVelX, 0, 16, dt);
 
-    if (inp.fire && !this.game.ui.modalOpen) this.tryFire();
-    if (inp.reload) this.reload();
-    if (inp.grenade) { inp.grenade = false; this.throwGrenade(); }
-    if (inp.melee) { inp.melee = false; this.melee(); }
-    if (inp.swap) { inp.swap = false; this.swapWeapon(); }
-    if (inp.ads) this.ads = true;
+    if ((inp.fire || inp.padFire) && !this.game.ui.modalOpen) this.tryFire();
+    if (inp.reload || inp.padReload) { inp.padReload = false; this.reload(); }
+    if (inp.grenade || inp.padGrenade) { inp.grenade = false; inp.padGrenade = false; this.throwGrenade(); }
+    if (inp.melee || inp.padMelee) { inp.melee = false; inp.padMelee = false; this.melee(); }
+    if (inp.swap || inp.padSwap) { inp.swap = false; inp.padSwap = false; this.swapWeapon(); }
+    if (inp.ads || inp.padAds) this.ads = true;
     else if (!this.game.touch?.adsToggle) this.ads = false;
 
     this.adsAmount = damp(this.adsAmount, this.ads ? 1 : 0, 13, dt);
@@ -252,17 +259,22 @@ export class Player {
     let moveX = 0, moveZ = 0;
     moveX += (inp.forward ? 1 : 0) - (inp.back ? 1 : 0);
     moveZ += (inp.right ? 1 : 0) - (inp.left ? 1 : 0);
-    const hasMove = moveX !== 0 || moveZ !== 0;
+    // Analog stick movement takes over whenever it is meaningfully deflected.
+    const analog = Math.abs(inp.moveX) > 0.12 || Math.abs(inp.moveZ) > 0.12;
+    if (analog) { moveX = inp.moveX; moveZ = inp.moveZ; }
+    const throttle = analog ? clamp(Math.hypot(moveX, moveZ), 0, 1) : 1;
+    const hasMove = Math.abs(moveX) > 0.001 || Math.abs(moveZ) > 0.001;
     const moveDir = new THREE.Vector3().addScaledVector(fwd, moveX).addScaledVector(right, moveZ);
     if (moveDir.lengthSq() > 0) moveDir.normalize();
 
-    const wantSprint = inp.sprint && moveX > 0.1 && !this.ads && !this.crouching && this.grounded && this.stamina > 2;
+    const wantSprint = (inp.sprint || inp.padSprint) && moveX > 0.1 && !this.ads && !this.crouching && this.grounded && this.stamina > 2;
     this.sprinting = wantSprint;
     if (wantSprint) this.stamina = Math.max(0, this.stamina - 17 * dt);
     else this.stamina = Math.min(100, this.stamina + (this.crouching ? 22 : 13) * dt);
 
     // crouch / slide
-    if (inp.crouch && !this.crouching && this.grounded) {
+    const crouchHeld = inp.crouch || inp.padCrouch;
+    if (crouchHeld && !this.crouching && this.grounded) {
       if (this.sprinting || this.vel.length() > 5.5) {
         if (this.slideCooldown <= 0) {
           this.sliding = true;
@@ -273,7 +285,7 @@ export class Player {
         }
       }
       this.crouching = true;
-    } else if (!inp.crouch && this.crouching && !this.sliding) {
+    } else if (!crouchHeld && this.crouching && !this.sliding) {
       // ensure headroom
       this.crouching = false;
     }
@@ -294,6 +306,7 @@ export class Player {
     if (this.sprinting) speed = 7.25;
     if (this.sliding) speed = lerp(4, 9.6, clamp(this.slideTime / 0.62, 0, 1));
     if (this.reloading) speed *= 0.92;
+    speed *= throttle;
 
     const targetVel = moveDir.clone().multiplyScalar(hasMove ? speed : 0);
     const accel = this.grounded ? (this.sliding ? 5 : 15) : 4.5;
@@ -301,11 +314,14 @@ export class Player {
     this.vel.z = damp(this.vel.z, targetVel.z, accel, dt);
 
     // jump
-    if (inp.jump && this.grounded && !this.crouching) {
-      this.vel.y = 6.6;
-      this.grounded = false;
+    if (inp.jump || inp.padJump) {
+      if (this.grounded && !this.crouching) {
+        this.vel.y = 6.6;
+        this.grounded = false;
+        this.stamina = Math.max(0, this.stamina - 4);
+      }
       inp.jump = false;
-      this.stamina = Math.max(0, this.stamina - 4);
+      inp.padJump = false;
     }
     this.vel.y -= 21 * dt;
 
@@ -452,13 +468,14 @@ export class Player {
       this.reload();
       return;
     }
-    if (!w.auto && this.wasFiring && this.game.input.fire) {
+    if (!w.auto && this.wasFiring && (this.game.input.fire || this.game.input.padFire)) {
       // semi-auto: require release
       return;
     }
     this.wasFiring = true;
     ammoState.mag--;
     this.shotsFired++;
+    this.game.gamepad?.rumble(45, 0.32, 0.12);
     this.fireCooldown = 60 / w.rpm;
     this.bloom = Math.min(1.6, this.bloom + (w.pellets > 1 ? 0.4 : 0.18));
     const baseDir = this.aimDir;
@@ -583,6 +600,7 @@ export class Player {
     this.lastDamage = this.game.matchTime;
     this.hurtT = 1;
     this.cameraShake = Math.max(this.cameraShake, 0.9);
+    this.game.gamepad?.rumble(180, 0.75, 0.4);
     audio.hurt();
     this.game.ui.damageFlash();
     this.game.ui.damageDirection(fromPos, this.pos, this.yaw);

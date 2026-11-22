@@ -71,20 +71,22 @@ Prepared for studio leadership, publishing partners, and live-ops.
 - **Health:** 100 base plus operator armor; delayed regeneration after 5.5 seconds out of damage.
 
 ### 2.4 Controls
-| Action | Desktop | Android |
-| --- | --- | --- |
-| Move | WASD | Left virtual stick |
-| Look | Mouse | Right drag zone |
-| Fire | Left mouse | FIRE button |
-| Aim | Right mouse | ADS toggle/button |
-| Reload | R | RELOAD button |
-| Jump | Space | JUMP button |
-| Crouch / slide | Ctrl / C | CROUCH button |
-| Sprint | Shift | Stick pushed to edge |
-| Grenade | G | FRAG button |
-| Melee | V | MELEE button |
-| Swap weapon | Q / wheel | SWAP button |
-| Pause | Esc | Pause icon |
+| Action | Desktop | Android | Controller |
+| --- | --- | --- | --- |
+| Move | WASD | Left virtual stick | Left stick |
+| Look | Mouse | Right drag zone | Right stick |
+| Fire | Left mouse | FIRE button | RT |
+| Aim | Right mouse | ADS toggle/button | LT |
+| Reload | R | RELOAD button | X |
+| Jump | Space | JUMP button | A |
+| Crouch / slide | Ctrl / C | CROUCH button | B (toggle) |
+| Sprint | Shift | Stick pushed to edge | Left stick pushed to edge / L3 |
+| Grenade | G | FRAG button | RB |
+| Melee | V | MELEE button | LB |
+| Swap weapon | Q / wheel | SWAP button | Y / D-pad left-right |
+| Pause | Esc | Pause icon | START |
+
+Gamepad menus use the D-pad or left stick to move focus, A to confirm, and B to go back. Aim sensitivity has a dedicated controller slider in Settings, and standard-mapping pads receive haptic feedback on fire and damage.
 
 ### 2.5 Bot AI
 Bots use a lightweight tactical model:
