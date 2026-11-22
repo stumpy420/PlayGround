@@ -21,7 +21,7 @@
 
 ## SENTINEL PROTOCOL
 
-A browser-native 5v5 tactical FPS built with Three.js. The vertical slice includes three modes (Team Deathmatch, Domination, Blackout), bot AI, a Neon Harbor arena, loadout/camos, battle pass, armory, wallet, match rewards, and Android touch controls.
+A browser-native 5v5 tactical FPS built with Three.js. The vertical slice includes three modes (Team Deathmatch, Domination, Blackout), bot AI, a Neon Harbor arena, loadout/camos, battle pass, armory, wallet, match rewards, and Android touch + gamepad controls.
 
 ### Run locally
 
@@ -41,6 +41,7 @@ Deep links for capture/QA:
 
 - **Desktop:** WASD move, mouse look, LMB fire, RMB aim, R reload, Space jump, Ctrl/C crouch-slide, Shift sprint, G frag, V melee, Q swap, Esc pause.
 - **Android:** dual-stick touch controls, auto-fire, aim assist, safe-area layout, and a landscape recommendation.
+- **Controller:** standard-mapping gamepad — left stick move, right stick look, RT fire, LT aim, A jump, B crouch/slide, X reload, Y swap, LB melee, RB frag, START pause. Menus navigate with the D-pad or left stick; A confirms and B goes back. Controller aim sensitivity is adjustable in Settings.
 
 ### Demo boundaries
 

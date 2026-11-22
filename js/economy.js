@@ -27,7 +27,7 @@ function defaultProfile() {
     subscription: { active: false, since: 0, plan: '' },
     wallet: '0x' + randomHex(40),
     txs: [],
-    settings: { sens: 50, fov: 80, quality: 'medium', volume: 65, difficulty: 'regular', touch: 'auto', bloom: true, shake: true, invert: false }
+    settings: { sens: 50, padSens: 55, fov: 80, quality: 'medium', volume: 65, difficulty: 'regular', touch: 'auto', bloom: true, shake: true, invert: false }
   };
 }
 

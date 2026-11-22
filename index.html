@@ -82,6 +82,12 @@
           <span>DEPLOY</span><small>SOLO QUEUE · BOTS SIM</small>
         </button>
         <div class="deploy-note"><span class="dot-live"></span> BLACKSITE UPLINK STABLE · 28 MS</div>
+        <div class="pad-nav" aria-label="Menu sections">
+          <button class="navbtn" data-screen="loadout">LOADOUT</button>
+          <button class="navbtn" data-screen="store">ARMORY</button>
+          <button class="navbtn" data-screen="wallet">WALLET</button>
+          <button class="navbtn" data-screen="dossier">DOSSIER</button>
+        </div>
       </div>
     </div>
 
@@ -327,6 +333,12 @@
       </div>
       <button class="tbtn pause-t" id="btn-pause-t">II</button>
     </div>
+
+    <div class="pad-hint" id="pad-hint" aria-hidden="true">
+      <span><b>RT</b>FIRE</span><span><b>LT</b>AIM</span><span><b>A</b>JUMP</span>
+      <span><b>B</b>SLIDE</span><span><b>X</b>RELOAD</span><span><b>Y</b>SWAP</span>
+      <span><b>RB</b>FRAG</span><span><b>START</b>PAUSE</span>
+    </div>
   </div>
 
   <!-- ============ COUNTDOWN ============ -->
@@ -351,6 +363,12 @@
       <div class="pause-controls">
         <span><kbd>WASD</kbd> MOVE</span><span><kbd>SHIFT</kbd> SPRINT</span><span><kbd>C</kbd> SLIDE</span>
         <span><kbd>SPACE</kbd> JUMP</span><span><kbd>R</kbd> RELOAD</span><span><kbd>G</kbd> FRAG</span>
+      </div>
+      <div class="pause-controls pad-controls">
+        <span><b>RT</b> FIRE</span><span><b>LT</b> AIM</span><span><b>L-STICK</b> MOVE</span>
+        <span><b>R-STICK</b> LOOK</span><span><b>A</b> JUMP</span><span><b>B</b> SLIDE</span>
+        <span><b>X</b> RELOAD</span><span><b>Y</b> SWAP</span><span><b>RB</b> FRAG</span>
+        <span><b>LB</b> MELEE</span><span><b>START</b> PAUSE</span>
       </div>
     </div>
   </div>
@@ -398,6 +416,8 @@
           <input type="range" id="set-sens" min="10" max="100" value="50" />
           <label>FIELD OF VIEW <b id="lbl-fov">80</b></label>
           <input type="range" id="set-fov" min="65" max="105" value="80" />
+          <label>CONTROLLER AIM <b id="lbl-padsens">55</b></label>
+          <input type="range" id="set-padsens" min="10" max="100" value="55" />
         </div>
         <div class="set-group">
           <label>GRAPHICS QUALITY</label>
@@ -419,6 +439,8 @@
           <label class="check"><input type="checkbox" id="set-bloom" checked /> BLOOM &amp; POST FX</label>
           <label class="check"><input type="checkbox" id="set-shake" checked /> CAMERA SHAKE</label>
           <label class="check"><input type="checkbox" id="set-invert" /> INVERT LOOK Y</label>
+          <label>CONTROLLER</label>
+          <div class="pad-status" id="pad-status">NO CONTROLLER DETECTED — CONNECT PAD AND PRESS A BUTTON</div>
         </div>
       </div>
       <div class="settings-foot">

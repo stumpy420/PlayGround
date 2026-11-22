@@ -120,6 +120,10 @@ export class UI {
       economy.setSetting('fov', +e.target.value);
       this.game.applyFov();
     });
+    $('#set-padsens').addEventListener('input', e => {
+      $('#lbl-padsens').textContent = e.target.value;
+      economy.setSetting('padSens', +e.target.value);
+    });
     $('#btn-reset').addEventListener('click', () => {
       if (confirm('Reset all local progress, credits and the demo wallet? This cannot be undone.')) {
         economy.reset();
@@ -1014,6 +1018,7 @@ export class UI {
   bindSettings() {
     const s = economy.profile.settings;
     $('#set-sens').value = s.sens; $('#lbl-sens').textContent = s.sens;
+    $('#set-padsens').value = s.padSens ?? 55; $('#lbl-padsens').textContent = s.padSens ?? 55;
     $('#set-fov').value = s.fov; $('#lbl-fov').textContent = s.fov;
     $('#set-vol').value = s.volume; $('#lbl-vol').textContent = s.volume;
     $('#set-bloom').checked = s.bloom !== false;
