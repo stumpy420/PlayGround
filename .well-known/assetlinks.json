@@ -1,0 +1,12 @@
+[
+  {
+    "relation": ["delegate_permission/common.handle_all_urls"],
+    "target": {
+      "namespace": "android_app",
+      "package_name": "com.vanguard.ballistics",
+      "sha256_cert_fingerprints": [
+        "14:6D:E9:44:C5:9F:5C:7C:1E:83:BF:59:B5:4F:92:CE:B8:35:10:96:A7:28:C8:6C:C1:F6:29:A1:0C:6D:E9:44"
+      ]
+    }
+  }
+]

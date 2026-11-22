@@ -1,0 +1,180 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
+  <meta name="theme-color" content="#05070a" />
+  <meta name="description" content="Vanguard Ballistics: Tactical Operations — a top-down tactical shooter with simulated ballistics, cover, and a six-operation campaign." />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <link rel="manifest" href="./manifest.webmanifest" />
+  <link rel="icon" href="./assets/icon.svg" type="image/svg+xml" />
+  <link rel="apple-touch-icon" href="./assets/icon-192.png" />
+  <link rel="stylesheet" href="./css/style.css" />
+  <title>Vanguard Ballistics — Tactical Operations</title>
+</head>
+<body>
+  <canvas id="game" aria-label="Vanguard Ballistics game view"></canvas>
+  <div class="screen-fx" aria-hidden="true">
+    <div class="scanlines"></div>
+    <div class="grain"></div>
+    <div class="vignette"></div>
+  </div>
+
+  <div id="menu" class="screen menu-screen">
+    <header class="topbar">
+      <div class="brand">
+        <svg class="brand-mark" viewBox="0 0 48 48" aria-hidden="true">
+          <circle cx="24" cy="24" r="21" fill="none" stroke="#f0a23c" stroke-width="1.5" stroke-dasharray="3 4" opacity=".8"/>
+          <circle cx="24" cy="24" r="13" fill="none" stroke="#38bdf8" stroke-width="1.4" opacity=".8"/>
+          <path d="M24 2v13M24 33v13M2 24h13M33 24h13" stroke="#f0a23c" stroke-width="2"/>
+          <circle cx="24" cy="24" r="3" fill="#f87171"/>
+        </svg>
+        <div class="brand-text"><strong>VANGUARD</strong><span>BALLISTICS</span></div>
+      </div>
+      <div class="topbar-right">
+        <button class="credits-chip" data-nav="armory" aria-label="Open armory">
+          <span class="cred-icon">◈</span><span id="menu-credits">450</span><em>CR</em>
+        </button>
+        <button class="icon-btn" data-nav="settings" aria-label="Options">⚙</button>
+      </div>
+    </header>
+
+    <main class="menu-main">
+      <section class="hero">
+        <div class="eyebrow"><span class="live-dot"></span> TACTICAL OPERATIONS <b>//</b> SEASON 01</div>
+        <h1>VANGUARD<br /><em>BALLISTICS</em></h1>
+        <p class="tagline">One operator. One shot. No second chances.</p>
+        <div class="hero-actions">
+          <button id="btn-play" class="btn btn-primary btn-xl" aria-label="Play">
+            <span class="btn-kicker" id="play-kicker">NEXT OPERATION</span>
+            <span class="btn-label">Play</span>
+            <span class="btn-arrow">▶</span>
+          </button>
+          <div class="nav-grid">
+            <button class="btn btn-ghost" data-nav="campaign"><span>01</span>CAMPAIGN</button>
+            <button class="btn btn-ghost" data-nav="armory"><span>02</span>ARMORY</button>
+            <button class="btn btn-ghost" data-nav="manual"><span>03</span>FIELD MANUAL</button>
+            <button class="btn btn-ghost" data-nav="settings"><span>04</span>OPTIONS</button>
+          </div>
+        </div>
+        <div class="operator-strip">
+          <div><span>OPERATOR LEVEL</span><strong id="menu-level">01</strong></div>
+          <div><span>MISSIONS CLEARED</span><strong id="menu-cleared">0 / 6</strong></div>
+          <div><span>LIFETIME KILLS</span><strong id="menu-kills">0</strong></div>
+          <div><span>ACCURACY</span><strong id="menu-accuracy">—</strong></div>
+        </div>
+      </section>
+
+      <aside class="mission-card" aria-label="Next operation">
+        <div class="card-corner tl"></div><div class="card-corner tr"></div><div class="card-corner bl"></div><div class="card-corner br"></div>
+        <div class="card-head"><span class="card-tag" id="card-tag">NEXT OPERATION</span><span class="card-status" id="card-status">READY</span></div>
+        <div class="card-map"><canvas id="card-radar" width="320" height="180"></canvas><span class="radar-label" id="card-loc">DOCKYARD 9</span></div>
+        <h2 id="card-name">COLD OPEN</h2>
+        <p id="card-brief">A smuggling ring is moving stolen munitions through Pier 9. Sweep the dockyard and recover the manifests.</p>
+        <div class="card-stats">
+          <div><span>THREAT</span><b class="threat" id="card-threat">◆◇◇◇◇◇</b></div>
+          <div><span>INTEL</span><b id="card-intel">2 FILES</b></div>
+          <div><span>PAYOUT</span><b class="gold" id="card-reward">260 CR</b></div>
+        </div>
+        <button class="btn btn-deploy" id="btn-deploy-card" aria-label="Deploy to next operation">
+          <span>DEPLOY</span><i>↗</i>
+        </button>
+      </aside>
+    </main>
+
+    <footer class="menu-footer">
+      <div class="ticker"><span>BALLISTIC SIMULATION ONLINE</span><i></i><span>COVER PENETRATION ENABLED</span><i></i><span>TACTICAL FOCUS READY</span><i></i><span id="footer-hint">TOUCH OR CLICK TO ENGAGE AUDIO</span></div>
+      <div class="build-tag">VB // BUILD 1.0.0</div>
+    </footer>
+  </div>
+
+  <div id="hud" class="screen hud hidden">
+    <div class="hud-top">
+      <div class="hud-operator">
+        <div class="op-badge"><span>VB</span><i>01</i></div>
+        <div class="op-bars">
+          <div class="bar-label"><span>VITALS</span><b id="hp-text">100</b></div>
+          <div class="bar hp-bar"><i id="hp-fill"></i><em></em></div>
+          <div class="bar armor-bar"><i id="armor-fill"></i></div>
+          <div class="focus-line"><span>FOCUS</span><div class="focus-meter"><i id="focus-fill"></i></div><b id="focus-state">READY</b></div>
+        </div>
+      </div>
+
+      <div class="hud-objective">
+        <span class="obj-kicker" id="obj-kicker">PRIMARY OBJECTIVE</span>
+        <div class="obj-main"><span class="obj-diamond"></span><strong id="obj-text">ELIMINATE HOSTILES</strong></div>
+        <span class="obj-sub" id="obj-sub">0 / 6</span>
+      </div>
+
+      <div class="hud-right">
+        <div class="minimap-wrap">
+          <canvas id="minimap" width="220" height="150"></canvas>
+          <span class="mini-label" id="minimap-label">DOCKYARD 9</span>
+          <span class="mini-north">N</span>
+        </div>
+        <div class="killfeed" id="killfeed"></div>
+      </div>
+    </div>
+
+    <div class="hud-bottom">
+      <div class="hud-left">
+        <div class="weapon-hud">
+          <div class="weapon-title"><span id="weapon-cls">SMG</span><strong id="weapon-name">MK4 VECTOR</strong></div>
+          <div class="ammo-line"><b id="ammo-mag">32</b><span id="ammo-reserve">/ 224</span><em id="fire-mode">AUTO</em></div>
+          <div class="reload-track"><i id="reload-fill"></i></div>
+          <div class="key-hint"><kbd>R</kbd> RELOAD <kbd>1</kbd> SWAP <kbd>G</kbd> FRAG <kbd>Q</kbd> FOCUS</div>
+        </div>
+        <div class="equipment">
+          <div class="equip"><span class="equip-icon">◉</span><div><b id="grenade-count">3</b><small>FRAG</small></div></div>
+          <div class="equip"><span class="equip-icon">⌁</span><div><b id="dash-state">READY</b><small>DASH</small></div></div>
+          <div class="equip"><span class="equip-icon">◎</span><div><b id="focus-text">READY</b><small>FOCUS</small></div></div>
+        </div>
+      </div>
+
+      <div class="hud-actions touch-only">
+        <button class="act-btn small" data-action="swap" aria-label="Swap weapon"><span>⇄</span><small>SWAP</small></button>
+        <button class="act-btn small" data-action="dash" aria-label="Dash"><span>⌁</span><small>DASH</small></button>
+        <button class="act-btn small" data-action="reload" aria-label="Reload"><span>↻</span><small>RELOAD</small></button>
+        <button class="act-btn small" data-action="grenade" aria-label="Throw grenade"><span>◉</span><small>FRAG</small></button>
+        <button class="act-btn primary" data-action="focus" aria-label="Tactical focus"><span>◎</span><small>FOCUS</small></button>
+      </div>
+      <button class="pause-btn" data-action="pause" aria-label="Pause">❚❚</button>
+    </div>
+
+    <div class="joystick" id="stick-move"><span></span><i></i></div>
+    <div class="joystick aim" id="stick-aim"><span></span><i></i></div>
+    <div class="hud-toast" id="toast"></div>
+    <div class="hud-tip" id="hud-tip"></div>
+    <div class="damage-flash" id="damage-flash"></div>
+    <div class="low-health" id="low-health"></div>
+  </div>
+
+  <div id="overlay" class="overlay hidden">
+    <div class="panel" id="panel">
+      <div class="panel-head">
+        <div><span class="panel-kicker" id="panel-kicker">VANGUARD COMMAND</span><h2 id="panel-title">OPERATIONS</h2></div>
+        <button class="icon-btn panel-close" id="panel-close" aria-label="Close">✕</button>
+      </div>
+      <div class="panel-body" id="panel-body"></div>
+      <div class="panel-foot" id="panel-foot"></div>
+    </div>
+  </div>
+
+  <div id="deploy" class="deploy hidden">
+    <div class="deploy-scan"></div>
+    <div class="deploy-inner">
+      <span class="deploy-kicker">OPERATION DEPLOYMENT</span>
+      <h2 id="deploy-name">COLD OPEN</h2>
+      <p id="deploy-loc">DOCKYARD 9 // ROTTERDAM</p>
+      <div class="deploy-bar"><i id="deploy-fill"></i></div>
+      <span class="deploy-status" id="deploy-status">INSERTION IN PROGRESS</span>
+    </div>
+  </div>
+
+  <div id="rotate-hint" class="rotate-hint hidden">LANDSCAPE RECOMMENDED — ROTATE FOR A WIDER FIELD OF VIEW</div>
+
+  <script type="module" src="./js/main.js"></script>
+</body>
+</html>

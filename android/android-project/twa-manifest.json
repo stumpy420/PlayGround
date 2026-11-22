@@ -1,0 +1,56 @@
+{
+  "packageId": "com.vanguard.ballistics",
+  "host": "ais-dev-hcmrpxfxeghhafe2exzkcf-78925681119.us-east1.run.app",
+  "name": "Vanguard Ballistics: Tactical Operations",
+  "launcherName": "Vanguard",
+  "display": "fullscreen",
+  "themeColor": "#0a0c10",
+  "themeColorDark": "#05070a",
+  "navigationColor": "#05070a",
+  "navigationColorDark": "#000000",
+  "navigationDividerColor": "#1e293b",
+  "navigationDividerColorDark": "#0f172a",
+  "backgroundColor": "#05070a",
+  "enableNotifications": true,
+  "startUrl": "/",
+  "iconUrl": "https://ais-dev-hcmrpxfxeghhafe2exzkcf-78925681119.us-east1.run.app/pwa-512x512.png",
+  "maskableIconUrl": "https://ais-dev-hcmrpxfxeghhafe2exzkcf-78925681119.us-east1.run.app/pwa-maskable-512x512.png",
+  "splashScreenFadeOutDuration": 300,
+  "signingKey": {
+    "path": "./android.keystore",
+    "alias": "vanguard_key"
+  },
+  "appVersionName": "1.0.0",
+  "appVersionCode": 1,
+  "shortcuts": [
+    {
+      "name": "Deploy Campaign",
+      "shortName": "Campaign",
+      "url": "/?mode=campaign",
+      "icon": "https://ais-dev-hcmrpxfxeghhafe2exzkcf-78925681119.us-east1.run.app/pwa-192x192.png"
+    },
+    {
+      "name": "Gunsmith Armory",
+      "shortName": "Gunsmith",
+      "url": "/?mode=gunsmith",
+      "icon": "https://ais-dev-hcmrpxfxeghhafe2exzkcf-78925681119.us-east1.run.app/pwa-192x192.png"
+    }
+  ],
+  "generatorApp": "bubblewrap-cli",
+  "webManifestUrl": "https://ais-dev-hcmrpxfxeghhafe2exzkcf-78925681119.us-east1.run.app/manifest.webmanifest",
+  "fallbackType": "customtabs",
+  "features": {
+    "locationDelegation": {
+      "enabled": false
+    },
+    "playBilling": {
+      "enabled": false
+    }
+  },
+  "alphaDependencies": {
+    "enabled": false
+  },
+  "enableSiteSettingsShortcut": true,
+  "isChromeOSOnly": false,
+  "orientation": "landscape"
+}

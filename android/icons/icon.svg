@@ -1,0 +1,48 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <defs>
+    <radialGradient id="bgGlow" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#1e293b"/>
+      <stop offset="100%" stop-color="#05070a"/>
+    </radialGradient>
+    <linearGradient id="amberGold" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#fbbf24"/>
+      <stop offset="50%" stop-color="#d97706"/>
+      <stop offset="100%" stop-color="#b45309"/>
+    </linearGradient>
+    <linearGradient id="cyanReticle" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#38bdf8"/>
+      <stop offset="100%" stop-color="#0284c7"/>
+    </linearGradient>
+  </defs>
+
+  <!-- Background -->
+  <rect width="512" height="512" rx="110" fill="#0a0c10"/>
+  <circle cx="256" cy="256" r="230" fill="url(#bgGlow)"/>
+
+  <!-- Military Outer Ring -->
+  <circle cx="256" cy="256" r="210" fill="none" stroke="url(#amberGold)" stroke-width="5" stroke-dasharray="14 10" opacity="0.85"/>
+  <circle cx="256" cy="256" r="185" fill="none" stroke="#334155" stroke-width="2"/>
+
+  <!-- Ballistic Crosshairs -->
+  <circle cx="256" cy="256" r="140" fill="none" stroke="url(#cyanReticle)" stroke-width="3" opacity="0.7"/>
+  <circle cx="256" cy="256" r="80" fill="none" stroke="url(#cyanReticle)" stroke-width="2" opacity="0.9"/>
+  <circle cx="256" cy="256" r="12" fill="#ef4444"/>
+
+  <!-- Mil-dot Crosshair ticks -->
+  <line x1="256" y1="56" x2="256" y2="196" stroke="url(#amberGold)" stroke-width="4"/>
+  <line x1="256" y1="316" x2="256" y2="456" stroke="url(#amberGold)" stroke-width="4"/>
+  <line x1="56" y1="256" x2="196" y2="256" stroke="url(#amberGold)" stroke-width="4"/>
+  <line x1="316" y1="256" x2="456" y2="256" stroke="url(#amberGold)" stroke-width="4"/>
+
+  <!-- Ballistic Drop Subdivisions -->
+  <line x1="240" y1="350" x2="272" y2="350" stroke="#f59e0b" stroke-width="3"/>
+  <line x1="246" y1="380" x2="266" y2="380" stroke="#f59e0b" stroke-width="2.5"/>
+  <line x1="236" y1="410" x2="276" y2="410" stroke="#f59e0b" stroke-width="3"/>
+
+  <!-- Tactical Chevrons (Vanguard V-shape) -->
+  <path d="M 176 190 L 256 240 L 336 190" fill="none" stroke="#f59e0b" stroke-width="8" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M 196 160 L 256 198 L 316 160" fill="none" stroke="#38bdf8" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" opacity="0.8"/>
+
+  <!-- Military Stencil Text -->
+  <text x="256" y="478" font-family="'Chakra Petch', sans-serif" font-size="24" font-weight="900" fill="#f8fafc" letter-spacing="6" text-anchor="middle">VANGUARD</text>
+</svg>

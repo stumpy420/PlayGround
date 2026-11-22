@@ -1,0 +1,63 @@
+plugins {
+    id 'com.android.application'
+}
+
+android {
+    namespace 'com.vanguard.ballistics'
+    compileSdk 34
+
+    defaultConfig {
+        applicationId "com.vanguard.ballistics"
+        minSdk 21
+        targetSdk 34
+        versionCode 1
+        versionName "1.0.0"
+
+        testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
+
+        // Manifest placeholders for Trusted Web Activity (TWA)
+        manifestPlaceholders = [
+            hostName: "ais-pre-hcmrpxfxeghhafe2exzkcf-78925681119.us-east1.run.app",
+            defaultUrl: "https://ais-pre-hcmrpxfxeghhafe2exzkcf-78925681119.us-east1.run.app",
+            launcherName: "@string/app_name",
+            assetStatements: '[{"relation": ["delegate_permission/common.handle_all_urls"], "target": {"namespace": "android_app", "package_name": "com.vanguard.ballistics", "sha256_cert_fingerprints": ["14:6D:E9:44:C5:9F:5C:7C:1E:83:BF:59:B5:4F:92:CE:B8:35:10:96:A7:28:C8:6C:C1:F6:29:A1:0C:6D:E9:44"]}}]',
+            orientation: "landscape"
+        ]
+    }
+
+    buildTypes {
+        release {
+            minifyEnabled true
+            shrinkResources true
+            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+        }
+        debug {
+            applicationIdSuffix ".debug"
+            debuggable true
+        }
+    }
+
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
+    }
+
+    bundle {
+        language {
+            enableSplit = false
+        }
+        density {
+            enableSplit = true
+        }
+        abi {
+            enableSplit = true
+        }
+    }
+}
+
+dependencies {
+    implementation 'androidx.appcompat:appcompat:1.6.1'
+    implementation 'com.google.android.material:material:1.11.0'
+    // Google Trusted Web Activity helper library
+    implementation 'com.google.androidbrowserhelper:androidbrowserhelper:2.5.0'
+}
