@@ -476,7 +476,7 @@ body:not(.playing) #game { cursor: default; }
 .equip b { font-family: var(--display); font-size: 11px; letter-spacing: 0.08em; font-weight: 600; }
 .equip small { font-family: var(--mono); font-size: 5.5px; letter-spacing: 0.14em; color: var(--dim); margin-top: 2px; }
 .pause-btn {
-  position: absolute;
+  position: fixed;
   top: calc(14px + var(--safe-top));
   right: calc(14px + var(--safe-right));
   width: 36px;
@@ -488,19 +488,20 @@ body:not(.playing) #game { cursor: default; }
   letter-spacing: 1px;
   cursor: pointer;
   pointer-events: auto;
-  z-index: 4;
+  z-index: 6;
 }
 .pause-btn:hover { color: var(--text); border-color: var(--line-bright); }
 
 .touch-only { display: none; }
 body.touch .touch-only { display: flex; }
+body.touch .hud-actions.touch-only { display: grid; }
 body.touch .key-hint { display: none; }
 body.touch .equipment { display: none; }
 body.touch .weapon-hud { width: 210px; padding: 7px 10px 6px; }
 body.touch .ammo-line b { font-size: 25px; }
 .hud-actions {
   position: relative;
-  display: grid;
+  display: none;
   grid-template-columns: repeat(3, 52px);
   grid-template-rows: repeat(2, 52px);
   gap: 7px;
@@ -698,6 +699,8 @@ body:not(.touch) .joystick { display: none; }
   color: var(--text);
 }
 .skirmish-card:hover { background: linear-gradient(90deg, rgba(88, 60, 160, 0.22), transparent); }
+.skirmish-card.locked { opacity: 0.42; cursor: not-allowed; filter: grayscale(0.6); }
+.skirmish-card.locked:hover { background: none; }
 .skirmish-card .sk-icon { width: 46px; height: 46px; display: grid; place-items: center; border: 1px solid rgba(167, 139, 250, 0.4); color: #c4b5fd; font-size: 20px; flex: 0 0 auto; }
 .skirmish-card h3 { font-family: var(--display); font-size: 18px; letter-spacing: 0.08em; margin: 0; }
 .skirmish-card p { margin: 2px 0 0; font-size: 10px; color: var(--muted); }
@@ -952,7 +955,6 @@ body:not(.touch) .joystick { display: none; }
 @media (max-height: 440px) {
   .tagline { display: none; }
   .eyebrow { display: none; }
-  .nav-grid { display: none; }
   .hero-actions { gap: 8px; }
   .btn-xl { min-width: 200px; width: auto; }
   .card-map { height: 58px; }
@@ -965,6 +967,39 @@ body:not(.touch) .joystick { display: none; }
   .act-btn { width: 42px; height: 42px; }
   body.touch .weapon-hud { width: 150px; }
   body.touch .ammo-line b { font-size: 21px; }
+  .hud-toast { top: 38%; }
+}
+
+/* Landscape phones: keep the campaign card and navigation reachable without scrolling. */
+@media (max-height: 560px) and (min-width: 700px) {
+  .menu-main {
+    grid-template-columns: minmax(0, 1fr) minmax(300px, 350px);
+    align-items: center;
+    gap: 22px;
+    padding: 4px 0;
+  }
+  .hero { max-width: 100%; }
+  .hero h1 { font-size: clamp(38px, 10.5vh, 60px); margin-bottom: 6px; }
+  .eyebrow { display: inline-flex; margin-bottom: 4px; font-size: 7px; }
+  .tagline { display: block; font-size: 9px; margin-bottom: 10px; }
+  .hero-actions { gap: 8px; }
+  .btn-xl { min-height: 52px; min-width: 0; }
+  .btn-label { font-size: 22px; }
+  .btn-kicker { font-size: 7px; }
+  .nav-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 5px; min-width: 0; width: 100%; }
+  .nav-grid .btn { padding: 7px 8px; font-size: 8px; letter-spacing: 0.12em; }
+  .mission-card { max-width: none; padding: 10px 12px; }
+  .card-map { height: 64px; margin-bottom: 6px; }
+  .mission-card h2 { font-size: 19px; margin: 4px 0; }
+  .mission-card p { display: none; }
+  .card-stats { padding: 5px 0; margin-bottom: 6px; gap: 4px; }
+  .card-stats span { font-size: 6px; }
+  .card-stats b { font-size: 9px; }
+  .btn-deploy { padding: 8px 10px; font-size: 10px; }
+  .menu-footer { padding-top: 5px; }
+  .operator-strip { display: none; }
+  .hud-toast { top: 38%; }
+  .hud-tip { display: none; }
 }
 @media (orientation: portrait) and (max-width: 500px) {
   .hero h1 { font-size: clamp(40px, 13vw, 58px); }
