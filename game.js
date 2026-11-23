@@ -21,11 +21,253 @@ scene.fog = new THREE.FogExp2(0x0a1b18, 0.0011);
 const camera = new THREE.PerspectiveCamera(58, innerWidth / innerHeight, 0.5, 4000);
 camera.position.set(0, 20, 30);
 
+/* ---------------------- cinematic post stack ---------------------- *
+ * HDR bloom + filmic ACES grade: the soft highlight roll-off and
+ * glowing neon that give night scenes their heavy-engine look.
+ * Renders the scene into a half-float target, builds two bloom mips,
+ * then composites with grade, vignette and grain. Falls back to a
+ * direct render when adaptive quality disables it.
+ * ------------------------------------------------------------------ */
+const post = (() => {
+  const gl2 = renderer.capabilities.isWebGL2;
+  const hdr = gl2 && (renderer.extensions.has('EXT_color_buffer_half_float') || renderer.extensions.has('EXT_color_buffer_float'));
+  const HDR_TYPE = hdr ? THREE.HalfFloatType : THREE.UnsignedByteType;
+  const rtOpts = {
+    type: HDR_TYPE, depthBuffer: false, stencilBuffer: false,
+    minFilter: THREE.LinearFilter, magFilter: THREE.LinearFilter,
+    wrapS: THREE.ClampToEdgeWrapping, wrapT: THREE.ClampToEdgeWrapping
+  };
+  const sceneRT = new THREE.WebGLRenderTarget(1, 1, {
+    ...rtOpts, depthBuffer: true, samples: gl2 ? Math.min(4, renderer.capabilities.maxSamples || 0) : 0
+  });
+  const bloomA = new THREE.WebGLRenderTarget(1, 1, rtOpts);
+  const bloomB = new THREE.WebGLRenderTarget(1, 1, rtOpts);
+  const bloomC = new THREE.WebGLRenderTarget(1, 1, rtOpts);
+  const bloomD = new THREE.WebGLRenderTarget(1, 1, rtOpts);
+  for (const rt of [sceneRT, bloomA, bloomB, bloomC, bloomD]) rt.texture.generateMipmaps = false;
+
+  const quadScene = new THREE.Scene();
+  const quadCam = new THREE.OrthographicCamera(-1, 1, 1, -1, 0, 1);
+  const tri = new THREE.BufferGeometry();
+  tri.setAttribute('position', new THREE.BufferAttribute(new Float32Array([-1, -1, 0, 3, -1, 0, -1, 3, 0]), 3));
+  tri.setAttribute('uv', new THREE.BufferAttribute(new Float32Array([0, 0, 2, 0, 0, 2]), 2));
+  const quad = new THREE.Mesh(tri, null);
+  quad.frustumCulled = false;
+  quadScene.add(quad);
+
+  const vert = 'varying vec2 vUv; void main(){ vUv = uv; gl_Position = vec4(position.xy, 0.0, 1.0); }';
+
+  const brightMat = new THREE.ShaderMaterial({
+    uniforms: { tScene: { value: null }, texel: { value: new THREE.Vector2() }, threshold: { value: 0.62 }, knee: { value: 0.42 } },
+    vertexShader: vert,
+    depthTest: false, depthWrite: false, blending: THREE.NoBlending,
+    fragmentShader: `
+      varying vec2 vUv;
+      uniform sampler2D tScene;
+      uniform vec2 texel;
+      uniform float threshold, knee;
+      void main(){
+        vec3 c = texture2D(tScene, vUv).rgb;
+        c += texture2D(tScene, vUv + texel * vec2( 1.0,  1.0)).rgb;
+        c += texture2D(tScene, vUv + texel * vec2(-1.0,  1.0)).rgb;
+        c += texture2D(tScene, vUv + texel * vec2( 1.0, -1.0)).rgb;
+        c += texture2D(tScene, vUv + texel * vec2(-1.0, -1.0)).rgb;
+        c *= 0.2;
+        float br = max(c.r, max(c.g, c.b));
+        float soft = clamp(br - threshold + knee, 0.0, 2.0 * knee);
+        soft = soft * soft / (4.0 * knee + 1e-4);
+        float contrib = max(soft, br - threshold) / max(br, 1e-4);
+        gl_FragColor = vec4(c * contrib, 1.0);
+      }`
+  });
+
+  const downMat = new THREE.ShaderMaterial({
+    uniforms: { tDiffuse: { value: null }, texel: { value: new THREE.Vector2() } },
+    vertexShader: vert,
+    depthTest: false, depthWrite: false, blending: THREE.NoBlending,
+    fragmentShader: `
+      varying vec2 vUv;
+      uniform sampler2D tDiffuse;
+      uniform vec2 texel;
+      void main(){
+        vec3 c = texture2D(tDiffuse, vUv).rgb * 0.5;
+        c += texture2D(tDiffuse, vUv + texel * vec2( 1.0, 1.0)).rgb * 0.125;
+        c += texture2D(tDiffuse, vUv + texel * vec2(-1.0, 1.0)).rgb * 0.125;
+        c += texture2D(tDiffuse, vUv + texel * vec2( 1.0,-1.0)).rgb * 0.125;
+        c += texture2D(tDiffuse, vUv + texel * vec2(-1.0,-1.0)).rgb * 0.125;
+        gl_FragColor = vec4(c, 1.0);
+      }`
+  });
+
+  const blurMat = new THREE.ShaderMaterial({
+    uniforms: { tDiffuse: { value: null }, dir: { value: new THREE.Vector2() } },
+    vertexShader: vert,
+    depthTest: false, depthWrite: false, blending: THREE.NoBlending,
+    fragmentShader: `
+      varying vec2 vUv;
+      uniform sampler2D tDiffuse;
+      uniform vec2 dir;
+      void main(){
+        vec3 s = texture2D(tDiffuse, vUv).rgb * 0.227027;
+        s += (texture2D(tDiffuse, vUv + dir * 1.3846154).rgb + texture2D(tDiffuse, vUv - dir * 1.3846154).rgb) * 0.3162162;
+        s += (texture2D(tDiffuse, vUv + dir * 3.2307692).rgb + texture2D(tDiffuse, vUv - dir * 3.2307692).rgb) * 0.0702703;
+        gl_FragColor = vec4(s, 1.0);
+      }`
+  });
+
+  const compMat = new THREE.ShaderMaterial({
+    uniforms: {
+      tScene: { value: null }, tBloomA: { value: null }, tBloomB: { value: null },
+      uResolution: { value: new THREE.Vector2(1, 1) },
+      uTime: { value: 0 }, uExposure: { value: 1.42 },
+      uBloom: { value: 0.78 }, uVignette: { value: 0.34 }, uGrain: { value: 0.0045 }
+    },
+    vertexShader: vert,
+    depthTest: false, depthWrite: false, blending: THREE.NoBlending,
+    fragmentShader: `
+      varying vec2 vUv;
+      uniform sampler2D tScene, tBloomA, tBloomB;
+      uniform vec2 uResolution;
+      uniform float uTime, uExposure, uBloom, uVignette, uGrain;
+
+      const mat3 ACESIn = mat3(
+        vec3(0.59719, 0.07600, 0.02840),
+        vec3(0.35458, 0.90834, 0.13383),
+        vec3(0.04823, 0.01566, 0.83777)
+      );
+      const mat3 ACESOut = mat3(
+        vec3( 1.60475, -0.10208, -0.00327),
+        vec3(-0.53108,  1.10813, -0.07276),
+        vec3(-0.07367, -0.00605,  1.07602)
+      );
+      vec3 rrt(vec3 v){
+        vec3 a = v * (v + 0.0245786) - 0.000090537;
+        vec3 b = v * (0.983729 * v + 0.4329510) + 0.238081;
+        return a / b;
+      }
+      vec3 aces(vec3 c){
+        c = ACESIn * c;
+        c = rrt(c);
+        c = ACESOut * c;
+        return clamp(c, 0.0, 1.0);
+      }
+      float hash(vec2 p){ return fract(sin(dot(p, vec2(12.9898, 78.233))) * 43758.5453); }
+
+      void main(){
+        vec2 uv = vUv;
+        vec2 d = uv - 0.5;
+        float r2 = dot(d, d);
+
+        // lateral chromatic aberration, only noticeable toward the edges
+        vec2 ca = d * 0.0035 * r2;
+        vec3 col;
+        col.r = texture2D(tScene, uv - ca).r;
+        col.g = texture2D(tScene, uv).g;
+        col.b = texture2D(tScene, uv + ca).b;
+
+        vec3 bloom = texture2D(tBloomA, uv).rgb * 0.62 + texture2D(tBloomB, uv).rgb * 0.9;
+        col += bloom * uBloom;
+        col *= uExposure;
+        col = aces(col);
+
+        // grade: cool shadows, warm highlights, gentle saturation lift
+        float luma = dot(col, vec3(0.2126, 0.7152, 0.0722));
+        col = mix(col, col * vec3(0.93, 1.01, 1.08), 0.55 * (1.0 - luma));
+        col = mix(col, col * vec3(1.06, 1.01, 0.95), 0.35 * luma);
+        col = mix(vec3(luma), col, 1.08);
+
+        col *= 1.0 - uVignette * smoothstep(0.12, 0.9, r2 * 1.85);
+        col += (hash(uv * uResolution + fract(uTime) * 97.0) - 0.5) * uGrain;
+
+        // tiny black-point lift so silhouettes keep their edges
+        col = col * 0.995 + 0.0022;
+
+        // tone map in linear, then encode for the sRGB canvas
+        col = max(col, 0.0);
+        vec3 srgb = mix(col * 12.92, 1.055 * pow(col, vec3(1.0 / 2.4)) - 0.055, step(vec3(0.0031308), col));
+        gl_FragColor = vec4(srgb, 1.0);
+      }`
+  });
+
+  let enabled = true;
+
+  function run(mat, target) {
+    quad.material = mat;
+    renderer.setRenderTarget(target);
+    renderer.render(quadScene, quadCam);
+  }
+
+  function setSize(w, h) {
+    const dpr = renderer.getPixelRatio();
+    const W = Math.max(2, Math.floor(w * dpr));
+    const H = Math.max(2, Math.floor(h * dpr));
+    sceneRT.setSize(W, H);
+    const bw = Math.max(2, Math.floor(W / 4)), bh = Math.max(2, Math.floor(H / 4));
+    bloomA.setSize(bw, bh);
+    bloomB.setSize(bw, bh);
+    const cw = Math.max(2, Math.floor(W / 8)), ch = Math.max(2, Math.floor(H / 8));
+    bloomC.setSize(cw, ch);
+    bloomD.setSize(cw, ch);
+    compMat.uniforms.uResolution.value.set(W, H);
+  }
+
+  function render(time) {
+    if (!enabled) { renderer.render(scene, camera); return; }
+
+    renderer.setRenderTarget(sceneRT);
+    renderer.render(scene, camera);
+
+    brightMat.uniforms.tScene.value = sceneRT.texture;
+    brightMat.uniforms.texel.value.set(1 / sceneRT.width, 1 / sceneRT.height);
+    run(brightMat, bloomA);
+
+    blurMat.uniforms.tDiffuse.value = bloomA.texture;
+    blurMat.uniforms.dir.value.set(1.5 / bloomA.width, 0);
+    run(blurMat, bloomB);
+    blurMat.uniforms.tDiffuse.value = bloomB.texture;
+    blurMat.uniforms.dir.value.set(0, 1 / bloomA.height);
+    run(blurMat, bloomA);
+
+    downMat.uniforms.tDiffuse.value = bloomA.texture;
+    downMat.uniforms.texel.value.set(1 / bloomA.width, 1 / bloomA.height);
+    run(downMat, bloomC);
+
+    blurMat.uniforms.tDiffuse.value = bloomC.texture;
+    blurMat.uniforms.dir.value.set(1.4 / bloomC.width, 0);
+    run(blurMat, bloomD);
+    blurMat.uniforms.tDiffuse.value = bloomD.texture;
+    blurMat.uniforms.dir.value.set(0, 1.3 / bloomC.height);
+    run(blurMat, bloomC);
+
+    compMat.uniforms.tScene.value = sceneRT.texture;
+    compMat.uniforms.tBloomA.value = bloomA.texture;
+    compMat.uniforms.tBloomB.value = bloomC.texture;
+    compMat.uniforms.uTime.value = time;
+
+    quad.material = compMat;
+    renderer.setRenderTarget(null);
+    renderer.render(quadScene, quadCam);
+  }
+
+  function setEnabled(on) {
+    enabled = on;
+    // with post on, the scene shades into linear HDR and the composite
+    // owns tone mapping; otherwise the renderer does it directly.
+    renderer.toneMapping = on ? THREE.NoToneMapping : THREE.ACESFilmicToneMapping;
+  }
+
+  setEnabled(true);
+  setSize(innerWidth, innerHeight);
+
+  return { render, setSize, setEnabled, get enabled() { return enabled; }, hdr };
+})();
+
 addEventListener('resize', () => {
   camera.aspect = innerWidth / innerHeight;
   camera.updateProjectionMatrix();
   renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 1.75));
   renderer.setSize(innerWidth, innerHeight);
+  post.setSize(innerWidth, innerHeight);
 });
 
 /* ----------------------------- helpers ---------------------------- */
@@ -1431,6 +1673,7 @@ function autoQuality(dt) {
     qualityLevel = 0;
     renderer.setPixelRatio(1);
     renderer.shadowMap.enabled = false;
+    post.setEnabled(false);
     scene.traverse(o => { if (o.isMesh || o.isInstancedMesh) o.castShadow = false; });
     moon.intensity = 1.4;
     rain.visible = false;
@@ -1444,7 +1687,7 @@ function loop(now) {
   requestAnimationFrame(loop);
   const dt = Math.min((now - last) / 1000, 0.05);
   last = now;
-  if (!started || over) { renderer.render(scene, camera); return; }
+  if (!started || over) { post.render(clockTime); return; }
   clockTime += dt;
   updatePlayer(dt);
   updateTraffic(dt);
@@ -1460,9 +1703,9 @@ function loop(now) {
   moon.position.set(player.pos.x - 260, 380, player.pos.z - 160);
   moon.target.position.set(player.pos.x, 0, player.pos.z);
   moon.target.updateMatrixWorld();
-  renderer.render(scene, camera);
+  post.render(clockTime);
 }
 requestAnimationFrame(loop);
 
 // expose a small debug/testing surface without changing gameplay
-window.BH = { player, vehicles, policeCars, missionDefs, scene, camera, renderer, THREE, keys, touch, get stage() { return stage; }, get wanted() { return wanted; } };
+window.BH = { player, vehicles, policeCars, missionDefs, scene, camera, renderer, post, THREE, keys, touch, get stage() { return stage; }, get wanted() { return wanted; } };

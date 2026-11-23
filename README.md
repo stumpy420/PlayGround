@@ -33,10 +33,11 @@ Open `index.html` through any static server (the project runs on port 3002). Eve
 ### Features
 
 - Fully 3D city with wet asphalt, reflections, rain, fog, street lights, neon, a waterfront, and a lit skyline.
+- Cinematic post stack: HDR bloom on lights and neon, filmic ACES tone mapping, cool-shadow grade, vignette, and subtle grain.
 - On-foot exploration, parked and moving traffic, vehicle theft, chase camera, damage, and drifting.
 - Four-stage mission chain with wanted levels, spawning police patrols, screens and sirens.
 - HUD with cash, health, speed, wanted stars, objective distance, and a local minimap.
-- Adaptive quality that disables shadows and rain if the frame rate drops on weaker devices.
+- Adaptive quality that drops shadows, rain, and the post stack if the frame rate falls on weaker devices.
 
 ### Files
 
