@@ -1,6 +1,6 @@
 {
   "packageId": "com.vanguard.ballistics",
-  "host": "ais-dev-hcmrpxfxeghhafe2exzkcf-78925681119.us-east1.run.app",
+  "host": "go.ondev.store",
   "name": "Vanguard Ballistics: Tactical Operations",
   "launcherName": "Vanguard",
   "display": "fullscreen",
@@ -12,9 +12,9 @@
   "navigationDividerColorDark": "#0f172a",
   "backgroundColor": "#05070a",
   "enableNotifications": true,
-  "startUrl": "/",
-  "iconUrl": "https://ais-dev-hcmrpxfxeghhafe2exzkcf-78925681119.us-east1.run.app/pwa-512x512.png",
-  "maskableIconUrl": "https://ais-dev-hcmrpxfxeghhafe2exzkcf-78925681119.us-east1.run.app/pwa-maskable-512x512.png",
+  "startUrl": "/stumpy420/PlayGround/index.html",
+  "iconUrl": "https://go.ondev.store/stumpy420/PlayGround/assets/icon-512.png",
+  "maskableIconUrl": "https://go.ondev.store/stumpy420/PlayGround/assets/icon-512.png",
   "splashScreenFadeOutDuration": 300,
   "signingKey": {
     "path": "./android.keystore",
@@ -26,18 +26,18 @@
     {
       "name": "Deploy Campaign",
       "shortName": "Campaign",
-      "url": "/?mode=campaign",
-      "icon": "https://ais-dev-hcmrpxfxeghhafe2exzkcf-78925681119.us-east1.run.app/pwa-192x192.png"
+      "url": "/stumpy420/PlayGround/index.html?mode=campaign",
+      "icon": "https://go.ondev.store/stumpy420/PlayGround/assets/icon-192.png"
     },
     {
       "name": "Gunsmith Armory",
       "shortName": "Gunsmith",
-      "url": "/?mode=gunsmith",
-      "icon": "https://ais-dev-hcmrpxfxeghhafe2exzkcf-78925681119.us-east1.run.app/pwa-192x192.png"
+      "url": "/stumpy420/PlayGround/index.html?mode=armory",
+      "icon": "https://go.ondev.store/stumpy420/PlayGround/assets/icon-192.png"
     }
   ],
   "generatorApp": "bubblewrap-cli",
-  "webManifestUrl": "https://ais-dev-hcmrpxfxeghhafe2exzkcf-78925681119.us-east1.run.app/manifest.webmanifest",
+  "webManifestUrl": "https://go.ondev.store/stumpy420/PlayGround/manifest.webmanifest",
   "fallbackType": "customtabs",
   "features": {
     "locationDelegation": {

@@ -16,3 +16,50 @@
 - 👤 [Explore the creator's projects](https://go.ondev.store/stumpy420).
 - 🌍 [Create with OMGithub](https://go.ondev.store/).
 <!-- omgithub:readme:end -->
+
+## Vanguard Ballistics — Tactical Operations
+
+A first-person tactical shooter with simulated ballistics, penetrable cover,
+six campaign operations, and an endless skirmish mode. It runs entirely in the
+browser with no build step.
+
+### Run locally
+
+```bash
+python3 -m http.server 4173
+# open http://127.0.0.1:4173/
+```
+
+Opening `index.html` directly also works, but service-worker/offline support
+requires HTTP or HTTPS.
+
+### Controls
+
+| Action | Desktop | Touch | Gamepad |
+| --- | --- | --- | --- |
+| Move | `WASD` / arrows | Left stick | Left stick |
+| Look | Mouse (click to lock) | Right stick | Right stick |
+| Fire | Left mouse button | Hold **FIRE** | RT / RB |
+| Reload | `R` | Reload button | X |
+| Frag | `G` | Frag button | B |
+| Dash | `Space` | Dash button | A |
+| Swap weapon | `1` / `2` | Swap button | Y |
+| Tactical Focus | `Q` | Focus button | LB |
+| Pause | `Esc` | Pause button | Start |
+
+Touch layouts adapt to landscape and portrait, including safe-area insets.
+Gamepad support uses the standard mapping.
+
+### Progression
+
+Completing an operation unlocks the next one and awards credits for weapons and
+field modifications. Clearing all six unlocks endless skirmish. Progress is
+stored locally under `vanguard.ballistics.save.v2`; **Options → Reset** clears it.
+
+### Install / offline
+
+The web manifest and service worker provide an installable PWA with an offline
+app shell. Android packaging lives in [`android/`](android/README.md); host,
+path, icon, and signing values are synchronized with
+`node android/scripts/configure-twa.mjs`.
+
