@@ -21,7 +21,7 @@ const renderer = new THREE.WebGLRenderer({ canvas, antialias:true, powerPreferen
 renderer.setPixelRatio(Math.min(devicePixelRatio || 1, 2));
 renderer.setSize(innerWidth, innerHeight);
 renderer.shadowMap.enabled = true;
-renderer.shadowMap.type = THREE.PCFShadowMap;
+renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 renderer.toneMapping = THREE.ACESFilmicToneMapping;
 renderer.toneMappingExposure = 1.08;
 renderer.outputColorSpace = THREE.SRGBColorSpace;
@@ -356,7 +356,11 @@ function updateWeather(dt) {
   if (weatherTimer > 0) return;
   weatherTimer = 95 + Math.random() * 130;
   if (state.quest.stage === 4 && !state.flags.raincoatFound) {
-    if (world.weather !== 'storm') { setWeather('storm'); ui.showEvent('BAROMETRIC FAILURE','The forecast says rain. The sky says something else.'); }
+    if (world.weather !== 'storm') {
+      setWeather('storm');
+      state.stats.storms++;
+      ui.showEvent('BAROMETRIC FAILURE','The forecast says rain. The sky says something else.');
+    }
     return;
   }
   const keys = ['rain','rain','heavy','fog','overcast','clear'];
@@ -1756,13 +1760,11 @@ function onBossDefeated(boss, npc) {
   }
   if (boss.id === 'mayor') {
     state.weirdness = clamp(state.weirdness + .08, 0, 1);
-    if (!f.artifacts.includes('cassette')) f.artifacts.push('cassette');
-    addItem('cassette', 1);
+    if (!f.artifacts.includes('cassette')) { f.artifacts.push('cassette'); addItem('cassette', 1); }
   }
   if (boss.id === 'future') {
     f.futureDefeated = true;
-    if (!f.artifacts.includes('cassette')) f.artifacts.push('cassette');
-    addItem('cassette', 1);
+    if (!f.artifacts.includes('cassette')) { f.artifacts.push('cassette'); addItem('cassette', 1); }
     state.weirdness = 1;
     setQuestStage(7);
     setTimeout(() => {
@@ -1843,6 +1845,7 @@ function toggleAlternate() {
   }
   alternate = !alternate;
   if (alternate) {
+    state.flags.alternateSeen = true;
     world.setOcean(true);
     state.weirdness = clamp(Math.max(state.weirdness, .9), 0, 1);
     world.setWeirdness(state.weirdness);
@@ -2036,12 +2039,13 @@ function buildPhoneBody(tab) {
       const done = sideQuestDone(q.id);
       return `<div class="panel-row"><div><h3>${esc(q.title)} ${done ? '· DONE' : ''}</h3><p>${esc(q.desc)}</p></div><span class="phone-reward">${esc(q.reward || '')}</span></div>`;
     }).join('');
+    const impossible = ['token','raincoat_button','mirror_shard'].filter(id => f.artifacts.includes(id)).length;
     return `<div class="panel-section-title">MAIN · ${esc(main.chapter)}</div>
       <div class="phone-objective"><b>${esc(main.title)}</b><span>${esc(ui.objective?.objective || main.objective)}</span></div>
       <div class="panel-section-title">SIDE QUESTS</div>${sides}
       <div class="panel-section-title">HIDDEN CHALLENGES</div>
       <div class="panel-row"><div><h3>The Ten Names</h3><p>Defeat every fighter in the undercurrent.</p></div><span class="phone-reward">${f.bossesDefeated.length} / ${BOSSES.length}</span></div>
-      <div class="panel-row"><div><h3>Three Impossible Things</h3><p>Collect the brass token, the raincoat button, and the mirror shard.</p></div><span class="phone-reward">${f.artifacts.length} / 3</span></div>
+      <div class="panel-row"><div><h3>Three Impossible Things</h3><p>Collect the brass token, the raincoat button, and the mirror shard.</p></div><span class="phone-reward">${impossible} / 3</span></div>
       <div class="panel-row"><div><h3>The Quiet Table</h3><p>Take Dax's seat under Terminal 9.</p></div><span class="phone-reward">${f.quietTable ? 'SEATED' : 'UNKNOWN'}</span></div>
       <div class="panel-row"><div><h3>The Thin Door</h3><p>Step into the alternate version of Bellingham.</p></div><span class="phone-reward">${f.alternateSeen ? 'SEEN' : f.truthRevealed ? 'OPEN' : 'LOCKED'}</span></div>`;
   }
@@ -2174,7 +2178,10 @@ function openEndingChoices() {
     { id:'control', title:'TAKE CONTROL', desc:'Sit in the chair. Edit one small thing. Then another. Then the rain.', ok:(f.darkRep || 0) > 0 && f.quietTable && f.futureDefeated, req:'Quiet Table alliance · dark reputation · Future Player defeated' },
     { id:'stay', title:'STAY IN BELLINGHAM', desc:'Walk home in the rain. Pretend nothing happened. It is not a happy ending. It is a life.', ok:maxRomance >= 60, req:'Any relationship above 60 · choose to forget' }
   ];
-  if (!opts.some(o => o.ok)) opts[4].ok = true;
+  if (!opts.some(o => o.ok)) {
+    opts[4].ok = true;
+    opts[4].req = 'No requirements met · stay anyway';
+  }
   const body = `<p>The Future Player is gone. The crowd has not moved. Above the ring, the screen is showing five versions of the same city.</p>
     <div class="ending-list">${opts.map(o => `<div class="ending-option ${o.ok ? '' : 'locked'}"><div><b>${esc(o.title)}</b><span>${esc(o.desc)}</span><em>${esc(o.req)}</em></div><span class="ending-state">${o.ok ? 'AVAILABLE' : 'LOCKED'}</span></div>`).join('')}</div>
     <p class="modal-quote">Every ending is a choice about what you owe a place that made you.</p>`;

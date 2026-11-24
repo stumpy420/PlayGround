@@ -236,15 +236,18 @@ export class World {
     this.sun = new THREE.DirectionalLight(0xe6efe8, 1.15);
     this.sun.position.set(-120, 190, -140);
     this.sun.castShadow = true;
-    this.sun.shadow.mapSize.set(1024, 1024);
+    const shadowRes = matchMedia('(pointer: coarse)').matches ? 1024 : 2048;
+    this.sun.shadow.mapSize.set(shadowRes, shadowRes);
     this.sun.shadow.camera.near = 10;
     this.sun.shadow.camera.far = 340;
     this.sun.shadow.camera.left = -95;
     this.sun.shadow.camera.right = 95;
     this.sun.shadow.camera.top = 95;
     this.sun.shadow.camera.bottom = -95;
-    this.sun.shadow.bias = -.001;
+    this.sun.shadow.bias = -.0005;
+    this.sun.shadow.normalBias = .025;
     this.scene.add(this.sun);
+    this.scene.add(this.sun.target);
     const fill = new THREE.DirectionalLight(0x6c8a94, .55);
     fill.position.set(100, 80, 150);
     this.scene.add(fill);
@@ -1086,6 +1089,13 @@ export class World {
       this.sky.position.y = 0;
     }
     if (this.stars) this.stars.position.copy(playerPos);
+    if (this.sun) {
+      // Keep the shadow volume centered on the player; the original fixed
+      // frustum left the Terminal 9 arena completely unshadowed.
+      this.sun.position.set(playerPos.x - 120, 190, playerPos.z - 140);
+      this.sun.target.position.set(playerPos.x, 0, playerPos.z);
+      this.sun.target.updateMatrixWorld();
+    }
     if (this.mountain) this.mountain.visible = playerPos.z < 220;
     this.updateTraffic(dt);
     if (this.water) this.water.material.uniforms.uTime.value = elapsed;
