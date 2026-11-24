@@ -1053,6 +1053,31 @@ body:not(.touch) .joystick { display: none; }
   .hero h1 { font-size: clamp(40px, 13vw, 58px); }
   .menu-main { padding-top: 26px; }
   .rotate-hint { display: block; }
+
+  /* Portrait thumbs need separate, non-competing zones: weapon card left,
+     action column above the fire button, fire anchored bottom-right. */
+  .hud-bottom { display: block; }
+  .hud-left { position: absolute; left: 0; bottom: 0; }
+  body.touch .weapon-hud { width: 168px; }
+  .hud-actions {
+    position: absolute;
+    right: 0;
+    bottom: 94px;
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+    align-content: flex-end;
+    width: 128px;
+    gap: 4px;
+  }
+  body.touch .hud-actions.touch-only { display: flex; }
+  .act-btn { width: 40px; height: 40px; }
+  .act-btn span { font-size: 14px; }
+  .act-btn small { font-size: 4px; }
+  .fire-btn { position: absolute; right: 0; bottom: 0; flex: none; width: 82px; height: 82px; }
+  .fire-btn span { font-size: 13px; }
+  .hud-tip { bottom: calc(104px + var(--safe-bottom)); }
+  .rotate-hint { top: calc(132px + var(--safe-top)); font-size: 6px; padding: 5px 10px; }
 }
 @media (pointer: coarse) {
   .hud-tip { display: none; }

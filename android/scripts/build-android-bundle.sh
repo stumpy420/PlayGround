@@ -7,6 +7,9 @@
 
 set -e
 
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+cd "$SCRIPT_DIR/.."
+
 echo "=== VANGUARD BALLISTICS: ANDROID APP BUNDLE GENERATOR ==="
 echo "Target Package: com.vanguard.ballistics"
 echo "Format: Android App Bundle (.aab)"

@@ -103,6 +103,7 @@ export class Game {
     this.renderer.resize();
     this.ui.init();
     this.refreshMenu();
+    this.applyLaunchIntent();
     this.resize();
     window.addEventListener('resize', () => this.resize());
     window.addEventListener('orientationchange', () => setTimeout(() => this.resize(), 200));
@@ -191,6 +192,27 @@ export class Game {
 
   persist() {
     writeSave(this.save);
+  }
+
+  // Deep links used by Android/TWA shortcuts and pinned installs.
+  applyLaunchIntent() {
+    if (this.state !== 'menu') return;
+    let mode = '';
+    try {
+      mode = (new URLSearchParams(location.search).get('mode') || '').toLowerCase();
+    } catch {
+      return;
+    }
+    if (!mode) return;
+    const panels = {
+      campaign: 'campaign', ops: 'campaign',
+      armory: 'armory', gunsmith: 'armory',
+      skirmish: 'skirmishBrief', survival: 'skirmishBrief',
+      settings: 'settings', options: 'settings',
+      manual: 'manual',
+    };
+    const panel = panels[mode];
+    if (panel) this.ui.openPanel(panel);
   }
 
   addCredits(n) {
@@ -300,6 +322,7 @@ export class Game {
     this.createDecals();
     this.player = this.createPlayer();
     this.enemies = this.map.enemySpawns.map((s) => this.createEnemy(s.type, s.x, s.y, s.room));
+    this.faceSpawnDirection();
     this.run = {
       shots: 0, hits: 0, kills: 0, headshots: 0, intel: 0,
       elapsed: 0, damage: 0, start: this.time, mission: def, index, skirmish: this.skirmish,
@@ -319,6 +342,40 @@ export class Game {
     this.ui.showTip(this.isTouch
       ? 'LEFT STICK MOVE  //  RIGHT STICK LOOK  //  HOLD FIRE TO SHOOT  //  ACTIONS BELOW'
       : 'WASD MOVE  //  MOUSE LOOK  //  LMB FIRE  //  R RELOAD  //  G FRAG  //  Q FOCUS', 8000);
+  }
+
+  // Open the mission looking at a live target when possible, otherwise down the
+  // longest clear sightline instead of staring at the nearest wall.
+  faceSpawnDirection() {
+    const p = this.player;
+    const map = this.map;
+    if (!p || !map) return;
+    let target = null;
+    let targetDist = Infinity;
+    for (const e of this.enemies) {
+      if (e.dead) continue;
+      const d = dist(p.x, p.y, e.x, e.y);
+      if (d < targetDist && map.los(p.x, p.y, e.x, e.y)) {
+        target = e;
+        targetDist = d;
+      }
+    }
+    if (target) {
+      p.angle = Math.atan2(target.y - p.y, target.x - p.x);
+      return;
+    }
+    let bestAngle = p.angle;
+    let bestDist = -1;
+    for (let i = 0; i < 32; i++) {
+      const a = -Math.PI + (i / 32) * Math.PI * 2;
+      const hit = map.raycast(p.x, p.y, p.x + Math.cos(a) * 1100, p.y + Math.sin(a) * 1100, 1100);
+      const d = hit ? hit.dist : 1100;
+      if (d > bestDist + 0.5) {
+        bestDist = d;
+        bestAngle = a;
+      }
+    }
+    p.angle = bestAngle;
   }
 
   restartMission() {
