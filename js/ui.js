@@ -30,7 +30,7 @@ export class UI {
       'weapon-cls', 'weapon-name', 'ammo-mag', 'ammo-reserve', 'fire-mode', 'reload-fill',
       'grenade-count', 'dash-state', 'focus-text', 'toast', 'hud-tip', 'damage-flash', 'low-health',
       'deploy', 'deploy-name', 'deploy-loc', 'deploy-fill', 'deploy-status', 'rotate-hint',
-      'stick-move', 'stick-aim',
+      'stick-move', 'stick-aim', 'lock-hint', 'btn-fire',
     ];
     this.el = {};
     for (const id of ids) this.el[id] = $(id);
@@ -277,6 +277,10 @@ export class UI {
     this.setText(this.el.reloadBtn, w.reloading ? 'RELOADING' : 'RELOAD');
     this.el['damage-flash'].style.opacity = String(clamp(g.damageFlash, 0, 1) * 0.85);
     this.el['low-health'].classList.toggle('active', p.hp < 32 && !p.dead);
+    if (this.el['lock-hint']) {
+      const showLock = !g.isTouch && g.state === 'playing' && !document.pointerLockElement;
+      this.el['lock-hint'].classList.toggle('hidden', !showLock);
+    }
   }
 
   showToast(text, type = '', duration = 2200) {
@@ -572,20 +576,20 @@ export class UI {
           <h3>OPERATOR CONTROL</h3>
           <div class="key-table">
             <kbd>WASD</kbd><span>Move / strafe</span>
-            <kbd>MOUSE</kbd><span>Aim</span>
+            <kbd>MOUSE</kbd><span>Look around (click to lock)</span>
             <kbd>LMB</kbd><span>Fire (hold for auto)</span>
             <kbd>R</kbd><span>Reload</span>
             <kbd>G</kbd><span>Throw frag grenade</span>
             <kbd>Q</kbd><span>Tactical Focus</span>
             <kbd>SPACE</kbd><span>Dash / dodge</span>
             <kbd>1 / 2</kbd><span>Swap primary & sidearm</span>
-            <kbd>ESC</kbd><span>Pause</span>
+            <kbd>ESC</kbd><span>Pause / release cursor</span>
           </div>
         </div>
         <div class="manual-card">
           <h3>TOUCH CONTROLS</h3>
-          <p>Left half: drag anywhere to move. Right half: drag to aim and automatically fire. Action buttons sit under the right thumb.</p>
-          <p>Use the reload button before a push. Dash makes you briefly invulnerable. Grenades bounce and detonate on a fuse.</p>
+          <p>Left half: drag to move. Right half: drag to look around. Hold the round FIRE button to shoot.</p>
+          <p>Use reload before a push. Dash makes you briefly invulnerable. Grenades bounce and detonate on a fuse.</p>
           <p>Landscape gives the widest field of view. Aim assist can be disabled in Options.</p>
         </div>
         <div class="manual-card">
@@ -631,6 +635,7 @@ export class UI {
         ${row('MASTER VOLUME', 'Weapons, impacts and field audio.', slider('volume', 'Master volume'))}
         ${row('MUSIC & AMBIENCE', 'Low industrial underscore and drone.', slider('music', 'Music volume'))}
         ${row('SCREEN SHAKE', 'Camera impulse from gunfire and explosions.', toggle('shake'))}
+        ${row('LOOK SENSITIVITY', 'Mouse and stick look speed.', slider('sensitivity', 'Look sensitivity'))}
         ${row('AIM ASSIST', 'Gentle target magnetism for touch and controller.', toggle('aimAssist'))}
         ${row('CONTEXT HINTS', 'Show contextual tactical prompts in the field.', toggle('hints'))}
       </div>

@@ -4,7 +4,7 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
   <meta name="theme-color" content="#05070a" />
-  <meta name="description" content="Vanguard Ballistics: Tactical Operations — a top-down tactical shooter with simulated ballistics, cover, and a six-operation campaign." />
+  <meta name="description" content="Vanguard Ballistics: Tactical Operations — a first-person tactical shooter with simulated ballistics, cover, and a six-operation campaign." />
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
   <meta name="mobile-web-app-capable" content="yes" />
@@ -140,9 +140,11 @@
         <button class="act-btn small" data-action="grenade" aria-label="Throw grenade"><span>◉</span><small>FRAG</small></button>
         <button class="act-btn primary" data-action="focus" aria-label="Tactical focus"><span>◎</span><small>FOCUS</small></button>
       </div>
+      <button class="fire-btn" id="btn-fire" aria-label="Fire weapon"><span>FIRE</span><em>HOLD</em></button>
       <button class="pause-btn" data-action="pause" aria-label="Pause">❚❚</button>
     </div>
 
+    <div class="lock-hint hidden" id="lock-hint"><b>CLICK TO TAKE CONTROL</b><span>MOUSE LOOK · LMB FIRE · ESC PAUSE</span></div>
     <div class="joystick" id="stick-move"><span></span><i></i></div>
     <div class="joystick aim" id="stick-aim"><span></span><i></i></div>
     <div class="hud-toast" id="toast"></div>

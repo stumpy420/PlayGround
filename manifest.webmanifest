@@ -2,7 +2,7 @@
   "name": "Vanguard Ballistics — Tactical Operations",
   "short_name": "Vanguard",
   "id": "/",
-  "description": "A top-down tactical shooter with simulated ballistics, cover, and a six-operation campaign.",
+  "description": "A first-person tactical shooter with simulated ballistics, cover, and a six-operation campaign.",
   "start_url": "./index.html",
   "scope": "./",
   "display": "fullscreen",
