@@ -1,7 +1,7 @@
 // Core simulation: mission flow, player, AI, ballistics, combat and persistence.
 
 import {
-  clamp, damp, lerp, dist, angleLerp, rand, randInt, pick,
+  clamp, damp, lerp, dist, angleLerp, angleWrap, rand, randInt, pick,
   loadSave, writeSave, resetSave,
 } from './util.js';
 import {
@@ -55,10 +55,14 @@ export class Game {
     this.isTouch = window.matchMedia('(pointer: coarse)').matches || 'ontouchstart' in window;
     this.input = {
       keys: new Set(),
-      mouse: { x: 0, y: 0, down: false, type: 'mouse' },
+      mouse: { x: 0, y: 0, down: false, type: 'mouse', locked: false },
       sticks: { move: null, aim: null },
       pad: { moveX: 0, moveY: 0, aimX: 0, aimY: 0, fire: false, prev: [] },
+      touchFire: false,
     };
+    this.wasLocked = false;
+    this.mouseFallback = false;
+    this.lockTimer = 0;
     this.menuMap = null;
     this.menuMission = null;
     this.menuKey = '';
@@ -313,8 +317,8 @@ export class Game {
     this.ui.hideDeploy();
     this.ui.showToast(this.skirmish ? 'SURVIVE THE ASSAULT' : 'MISSION ACTIVE — ELIMINATE HOSTILES', 'good', 2400);
     this.ui.showTip(this.isTouch
-      ? 'LEFT STICK MOVE  //  RIGHT STICK AIM & FIRE  //  BUTTONS: RELOAD · FRAG · DASH · FOCUS'
-      : 'WASD MOVE  //  MOUSE AIM  //  LMB FIRE  //  R RELOAD  //  G FRAG  //  Q FOCUS', 8000);
+      ? 'LEFT STICK MOVE  //  RIGHT STICK LOOK  //  HOLD FIRE TO SHOOT  //  ACTIONS BELOW'
+      : 'WASD MOVE  //  MOUSE LOOK  //  LMB FIRE  //  R RELOAD  //  G FRAG  //  Q FOCUS', 8000);
   }
 
   restartMission() {
@@ -330,6 +334,9 @@ export class Game {
 
   returnToMenu() {
     this.state = 'menu';
+    this.input.touchFire = false;
+    this.input.mouse.down = false;
+    if (document.pointerLockElement) document.exitPointerLock?.();
     this.player = null;
     this.enemies = [];
     this.bullets = [];
@@ -368,9 +375,9 @@ export class Game {
     const primary = resolveWeapon(this.save.loadout.primary, this.save);
     const p = {
       x: this.map.playerSpawn.x, y: this.map.playerSpawn.y, r: 13,
-      angle: -Math.PI / 2, vx: 0, vy: 0,
+      angle: -Math.PI / 2, pitch: 0, lookT: 0, vx: 0, vy: 0,
       hp: 100, maxHp: 100, armor: mods.maxArmor, maxArmor: mods.maxArmor,
-      speed: 218 * mods.speed, weapons: [makeWeaponState(primary), makeWeaponState({ ...SIDEARM })],
+      speed: 205 * mods.speed, weapons: [makeWeaponState(primary), makeWeaponState({ ...SIDEARM })],
       slot: 0, swapT: 0, fireCd: 0, heat: 0, walk: 0,
       grenades: mods.grenades, maxGrenades: mods.grenades,
       focusActive: 0, focusCd: 0, focusFull: mods.focusCooldown,
@@ -495,6 +502,35 @@ export class Game {
     window.addEventListener('pointermove', (e) => this.onPointerMove(e));
     window.addEventListener('pointerup', (e) => this.onPointerUp(e));
     window.addEventListener('pointercancel', (e) => this.onPointerUp(e));
+    document.addEventListener('pointerlockchange', () => {
+      const locked = document.pointerLockElement === this.canvas;
+      this.input.mouse.locked = locked;
+      if (locked) {
+        this.wasLocked = true;
+        this.mouseFallback = false;
+      } else if (this.wasLocked) {
+        this.wasLocked = false;
+        if (this.state === 'playing' && !this.isTouch) this.pause();
+      }
+    });
+    const fireBtn = $('btn-fire');
+    if (fireBtn) {
+      const hold = (on) => (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        this.ensureAudio();
+        this.input.touchFire = on;
+        if (on) fireBtn.classList.add('held');
+        else fireBtn.classList.remove('held');
+      };
+      fireBtn.addEventListener('pointerdown', (e) => {
+        hold(true)(e);
+        fireBtn.setPointerCapture?.(e.pointerId);
+      });
+      fireBtn.addEventListener('pointerup', hold(false));
+      fireBtn.addEventListener('pointercancel', hold(false));
+      fireBtn.addEventListener('lostpointercapture', hold(false));
+    }
     document.querySelectorAll('#hud [data-action]').forEach((btn) => {
       btn.addEventListener('pointerdown', (e) => {
         e.preventDefault();
@@ -511,9 +547,12 @@ export class Game {
     this.ensureAudio();
     if (this.state !== 'playing') return;
     if (e.pointerType === 'mouse') {
-      this.input.mouse.down = e.button === 0;
       this.input.mouse.type = 'mouse';
-      this.updateMouse(e);
+      if (e.button === 0 && !this.isTouch && !this.input.mouse.locked && !this.mouseFallback) {
+        this.requestLock();
+        return;
+      }
+      this.input.mouse.down = e.button === 0;
       return;
     }
     const rect = this.canvas.getBoundingClientRect();
@@ -529,6 +568,32 @@ export class Game {
     this.canvas.setPointerCapture?.(e.pointerId);
   }
 
+  requestLock() {
+    if (this.isTouch || document.pointerLockElement === this.canvas) return;
+    try {
+      const result = this.canvas.requestPointerLock?.();
+      if (result && typeof result.catch === 'function') {
+        result.catch(() => { this.mouseFallback = true; });
+      }
+    } catch {
+      this.mouseFallback = true;
+    }
+    // Pointer lock is a progressive enhancement; drag-look still works.
+    clearTimeout(this.lockTimer);
+    this.lockTimer = setTimeout(() => {
+      if (!this.input.mouse.locked) this.mouseFallback = true;
+    }, 650);
+  }
+
+  lookBy(dx, dy) {
+    const p = this.player;
+    if (!p || this.state !== 'playing') return;
+    const sens = 0.0021 * (0.45 + (this.save.settings.sensitivity ?? 0.55) * 1.7);
+    p.angle = angleWrap(p.angle + dx * sens);
+    p.pitch = clamp(p.pitch - dy * sens * 0.8, -0.62, 0.62);
+    p.lookT = 0.6;
+  }
+
   updateMouse(e) {
     const rect = this.canvas.getBoundingClientRect();
     this.input.mouse.x = e.clientX - rect.left;
@@ -537,8 +602,9 @@ export class Game {
 
   onPointerMove(e) {
     if (e.pointerType === 'mouse') {
-      this.updateMouse(e);
       this.input.mouse.type = 'mouse';
+      if (this.input.mouse.locked || (e.buttons & 1) === 1) this.lookBy(e.movementX || 0, e.movementY || 0);
+      this.updateMouse(e);
       return;
     }
     for (const side of ['move', 'aim']) {
@@ -588,10 +654,13 @@ export class Game {
     this.state = 'paused';
     document.body.classList.remove('playing');
     this.input.mouse.down = false;
+    this.input.touchFire = false;
+    $('btn-fire')?.classList.remove('held');
     this.input.sticks.move = null;
     this.input.sticks.aim = null;
     this.ui.hideJoystick('move');
     this.ui.hideJoystick('aim');
+    if (document.pointerLockElement === this.canvas) document.exitPointerLock?.();
     this.ui.openPanel('pause');
   }
 
@@ -601,6 +670,7 @@ export class Game {
     this.state = 'playing';
     document.body.classList.add('playing');
     this.lastTime = performance.now();
+    if (!this.isTouch) setTimeout(() => this.requestLock(), 30);
   }
 
   togglePause() {
@@ -699,41 +769,65 @@ export class Game {
     this.audio.grenade();
   }
 
+  applyLook(dt) {
+    const p = this.player;
+    if (!p) return;
+    const stick = this.input.sticks.aim;
+    const pad = this.input.pad;
+    if (stick && stick.active && stick.mag > 0.08) {
+      p.angle = angleWrap(p.angle + (stick.dx / 62) * 3.0 * dt);
+      p.pitch = clamp(p.pitch - (stick.dy / 62) * 1.7 * dt, -0.62, 0.62);
+      p.lookT = 0.6;
+    }
+    if (Math.hypot(pad.aimX, pad.aimY) > 0.24) {
+      p.angle = angleWrap(p.angle + pad.aimX * 2.8 * dt);
+      p.pitch = clamp(p.pitch - pad.aimY * 1.6 * dt, -0.62, 0.62);
+      p.lookT = 0.6;
+    }
+  }
+
   getMoveInput() {
-    let x = 0;
-    let y = 0;
+    let forward = 0;
+    let strafe = 0;
     const k = this.input.keys;
-    if (k.has('KeyW') || k.has('ArrowUp')) y -= 1;
-    if (k.has('KeyS') || k.has('ArrowDown')) y += 1;
-    if (k.has('KeyA') || k.has('ArrowLeft')) x -= 1;
-    if (k.has('KeyD') || k.has('ArrowRight')) x += 1;
+    if (k.has('KeyW') || k.has('ArrowUp')) forward += 1;
+    if (k.has('KeyS') || k.has('ArrowDown')) forward -= 1;
+    if (k.has('KeyD') || k.has('ArrowRight')) strafe += 1;
+    if (k.has('KeyA') || k.has('ArrowLeft')) strafe -= 1;
     const stick = this.input.sticks.move;
     if (stick && stick.active && stick.mag > 0.12) {
-      x = stick.dx / 62;
-      y = stick.dy / 62;
+      strafe = stick.dx / 62;
+      forward = -stick.dy / 62;
     }
     const pad = this.input.pad;
     if (Math.hypot(pad.moveX, pad.moveY) > 0.22) {
-      x = pad.moveX;
-      y = pad.moveY;
+      strafe = pad.moveX;
+      forward = -pad.moveY;
     }
-    const len = Math.hypot(x, y);
-    if (len > 1) {
-      x /= len;
-      y /= len;
+    const mag = Math.hypot(forward, strafe);
+    if (mag > 1) {
+      forward /= mag;
+      strafe /= mag;
     }
+    const p = this.player;
+    const angle = p ? p.angle : 0;
+    const cos = Math.cos(angle);
+    const sin = Math.sin(angle);
+    // Forward is the view direction; right is 90° clockwise in world space.
+    const x = cos * forward - sin * strafe;
+    const y = sin * forward + cos * strafe;
     const sprint = k.has('ShiftLeft') || k.has('ShiftRight');
-    return { x, y, sprint, moving: len > 0.1 };
+    return { x, y, sprint, moving: mag > 0.1 };
   }
 
   aimAssistAngle(angle) {
     if (!this.save.settings.aimAssist) return angle;
     let best = null;
-    let bestDiff = 0.2;
+    let bestDiff = 0.16;
     for (const e of this.enemies) {
       if (e.dead) continue;
       const d = dist(this.player.x, this.player.y, e.x, e.y);
-      if (d > 840) continue;
+      if (d > 700) continue;
       const a = Math.atan2(e.y - this.player.y, e.x - this.player.x);
       let diff = Math.atan2(Math.sin(a - angle), Math.cos(a - angle));
       if (Math.abs(diff) < bestDiff) {
@@ -744,39 +838,30 @@ export class Game {
       }
     }
     if (!best) return angle;
-    const maxPull = 0.11;
+    const maxPull = 0.075;
     return angle + clamp(best.diff, -maxPull, maxPull);
   }
 
-  getAimInput(dt = 0.016, allowAssist = false) {
+  getAimInput() {
     const p = this.player;
     if (!p) return { angle: 0, firing: false, mode: 'mouse' };
-    let angle = p.angle;
     let firing = false;
     let mode = 'mouse';
-    const aimStick = this.input.sticks.aim;
-    const pad = this.input.pad;
-    if (aimStick && aimStick.active && aimStick.mag > 0.14) {
-      angle = Math.atan2(aimStick.dy, aimStick.dx);
-      firing = aimStick.mag > 0.3;
-      mode = 'touch';
-    } else if (Math.hypot(pad.aimX, pad.aimY) > 0.32) {
-      angle = Math.atan2(pad.aimY, pad.aimX);
-      firing = pad.fire;
-      mode = 'pad';
-    } else if (this.input.mouse.type === 'mouse' && !this.isTouch) {
-      const world = this.renderer.screenToWorld(this.input.mouse.x, this.input.mouse.y);
-      angle = Math.atan2(world.y - p.y, world.x - p.x);
-      firing = this.input.mouse.down;
+    if (this.input.mouse.down) {
+      firing = true;
       mode = 'mouse';
-    } else if (pad.fire) {
+    }
+    if (this.input.touchFire) {
+      firing = true;
+      mode = 'touch';
+    }
+    if (this.input.pad.fire) {
       firing = true;
       mode = 'pad';
     }
-    if (allowAssist && (mode === 'touch' || mode === 'pad')) angle = this.aimAssistAngle(angle);
-    this.aimPoint.x = p.x + Math.cos(angle) * 280;
-    this.aimPoint.y = p.y + Math.sin(angle) * 280;
-    return { angle, firing, mode };
+    this.aimPoint.x = p.x + Math.cos(p.angle) * 280;
+    this.aimPoint.y = p.y + Math.sin(p.angle) * 280;
+    return { angle: p.angle, firing, mode };
   }
 
   pollGamepad() {
@@ -864,9 +949,13 @@ export class Game {
       if (w.reloadT <= 0) this.finishReload(w);
     }
     const move = this.getMoveInput();
-    const aim = this.getAimInput(dt, true);
-    p.angle = angleLerp(p.angle, aim.angle, 1 - Math.exp(-28 * dt));
-    let speed = p.speed * (move.sprint && !this.isTouch ? 1.34 : 1);
+    this.applyLook(realDt);
+    const aim = this.getAimInput();
+    if (aim.firing && (aim.mode === 'pad' || aim.mode === 'touch')) {
+      p.angle = angleLerp(p.angle, this.aimAssistAngle(p.angle), 1 - Math.exp(-3.2 * realDt));
+    }
+    p.lookT = Math.max(0, (p.lookT || 0) - realDt);
+    let speed = p.speed * (move.sprint && !this.isTouch ? 1.3 : 1);
     let tx = 0;
     let ty = 0;
     if (p.dashT > 0) {
@@ -1237,7 +1326,7 @@ export class Game {
         life: rand(0.06, 0.14), max: 0.14, size: rand(1, 2), color: e.def.accent,
       });
     }
-    const pan = clamp((muzzleX - this.renderer.camera.x) / 900, -0.8, 0.8);
+    const pan = this.renderer.panFor(muzzleX, muzzleY);
     this.audio.shoot(e.type === 'marksman' ? 'dmr' : e.type === 'heavy' ? 'lmg' : 'rifle', { enemy: true, pan });
   }
 
@@ -1324,7 +1413,7 @@ export class Game {
       b.dmg *= 0.7;
       b.ricochets++;
       b.pen = Math.max(0, b.pen - 1);
-      this.audio.ricochet(clamp((hit.x - this.renderer.camera.x) / 900, -0.8, 0.8));
+      this.audio.ricochet(this.renderer.panFor(hit.x, hit.y));
       for (let i = 0; i < 4; i++) {
         this.particles.push({
           type: 'spark', x: hit.x, y: hit.y,
@@ -1363,7 +1452,7 @@ export class Game {
     }
     this.markDecal('hole', hit.x, hit.y, rand(0, 6));
     this.bullets.splice(index, 1);
-    this.audio.impact(clamp((hit.x - this.renderer.camera.x) / 900, -0.8, 0.8));
+    this.audio.impact(this.renderer.panFor(hit.x, hit.y));
     for (let i = 0; i < 3; i++) {
       this.particles.push({
         type: 'spark', x: hit.x, y: hit.y,
@@ -1461,6 +1550,8 @@ export class Game {
     this.player.dead = true;
     this.state = 'results';
     this.input.mouse.down = false;
+    this.input.touchFire = false;
+    if (document.pointerLockElement) document.exitPointerLock?.();
     document.body.classList.remove('playing');
     this.audio.fail();
     for (let i = 0; i < 26; i++) {
@@ -1545,7 +1636,7 @@ export class Game {
   }
 
   explode(x, y, radius, damage) {
-    this.audio.explosion(clamp((x - this.renderer.camera.x) / 900, -0.8, 0.8));
+    this.audio.explosion(this.renderer.panFor(x, y));
     this.renderer.shake(16);
     this.markDecal('scorch', x, y, 0, radius / 100);
     this.particles.push({ type: 'ring', x, y, vx: 0, vy: 0, life: 0.42, max: 0.42, size: radius, color: '#ffb36b' });
@@ -1752,6 +1843,9 @@ export class Game {
   finishMission() {
     if (this.state !== 'playing') return;
     this.state = 'results';
+    this.input.touchFire = false;
+    this.input.mouse.down = false;
+    if (document.pointerLockElement) document.exitPointerLock?.();
     document.body.classList.remove('playing');
     const run = this.run;
     const mission = this.mission;

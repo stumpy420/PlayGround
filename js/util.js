@@ -81,6 +81,7 @@ export const DEFAULT_SAVE = {
     shake: true,
     aimAssist: true,
     hints: true,
+    sensitivity: 0.55,
   },
   stats: {
     kills: 0,
