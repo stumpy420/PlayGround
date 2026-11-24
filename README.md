@@ -23,6 +23,11 @@ A playable first-person extraction slice set in the badlands of Aethelgard. Cros
 crack supply caches, mine glowing Ether-Core, put down rogue drones, and hold Lift 04 long
 enough to bank your haul. Die — or abandon the run — and the wasteland keeps the cargo.
 
+Alongside **Free Hunt**, the game includes **THE MOURNING CHOIR**, a five-operation story campaign
+with radio drama, authored objectives, scripted ambushes, boss fights, and two endings. You are
+the last copy of Dr. Mara Voss. MOTH brought you back; the Warden remembers what you did; the
+forty thousand names in the Ether-Core are still singing.
+
 This is a self-contained Three.js prototype with no build step and no runtime network calls.
 
 ### Run it
@@ -34,6 +39,25 @@ python3 -m http.server 3002
 ```
 
 In the OMGithub playground, `./start.sh` serves the same static site.
+
+### THE MOURNING CHOIR
+
+Select **Start Campaign** to open the operation briefing, then **Deploy**. Free Hunt remains
+available from the start screen and plays exactly like the original extraction loop.
+
+| Op | Title | Story beat |
+| --- | --- | --- |
+| 01 | **Dead Letter** | Recover a courier black box that is transmitting in your own voice. |
+| 02 | **The Choir Below** | Slice the relay under Refinery 09 and survive the Warden's response. |
+| 03 | **Bone Orchard** | Overload three storm spires and destroy the Shepherd. |
+| 04 | **The Warden's Debt** | Kill the Warden Prime and recover his confession. |
+| 05 | **The Last Ascent** | Choose: upload the Choir to MOTH, or burn it and let the dead rest. |
+
+Objectives appear in the mission panel, the active waypoint is drawn in the world, MOTH and the
+Warden transmit over the radio, and boss health is shown at the top of the HUD. Hold `E` (or gamepad
+`X`) near story props to recover, slice, overload, or choose. Progress is saved in `localStorage`
+under `aethelgard.campaign.v1`; death or abandonment returns you to the same operation. Completing
+the campaign records your ending and unlocks a replay from Operation 01.
 
 ### Controls
 
@@ -70,6 +94,9 @@ button to link it. The HUD shows a controller badge when one is connected.
 | D-pad left/right | Previous / next weapon |
 | `VIEW` | Field manual |
 | `START` | Pause / resume |
+
+On the start screen, `A` / `START` opens the campaign briefing; `A` deploys and `B` closes it.
+On the end screen, `A` / `START` continues to the next operation, retries, or returns to Sanctuary.
 
 ### Loadout
 

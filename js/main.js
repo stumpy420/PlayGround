@@ -14,9 +14,13 @@ try {
 
 if (game) {
   const startBtn = document.getElementById('start-btn');
+  const freeHuntBtn = document.getElementById('freehunt-btn');
   const helpBtn = document.getElementById('help-btn');
   const helpClose = document.getElementById('help-close');
   const helpDone = document.getElementById('help-done');
+  const briefClose = document.getElementById('brief-close');
+  const briefBack = document.getElementById('brief-back');
+  const briefDeploy = document.getElementById('brief-deploy');
   const resumeBtn = document.getElementById('resume-btn');
   const pauseHelpBtn = document.getElementById('pause-help-btn');
   const abandonBtn = document.getElementById('abandon-btn');
@@ -41,16 +45,30 @@ if (game) {
     }
   };
 
+  const openBriefing = () => {
+    game.audio.resume();
+    game.audio.click();
+    game.showBriefing();
+  };
+
   // Controller menu actions live here because the menu DOM state lives here.
   game.openHelp = openHelp;
   game.closeHelp = closeHelp;
   game.isHelpOpen = () => !ui.el.help.classList.contains('hidden');
+  game.openBriefing = openBriefing;
+  game.isBriefingOpen = () => !ui.el.brief.classList.contains('hidden');
 
-  startBtn.addEventListener('click', () => {
+  startBtn.addEventListener('click', openBriefing);
+
+  freeHuntBtn.addEventListener('click', () => {
     game.audio.resume();
     game.audio.click();
     game.startRun();
   });
+
+  briefDeploy.addEventListener('click', () => game.deployBriefing());
+  briefClose.addEventListener('click', () => game.closeBriefing());
+  briefBack.addEventListener('click', () => game.closeBriefing());
 
   helpBtn.addEventListener('click', () => {
     game.audio.resume();
@@ -74,7 +92,7 @@ if (game) {
 
   redeployBtn.addEventListener('click', () => {
     game.audio.click();
-    game.startRun();
+    game.redeploy();
   });
 
   muteBtn.addEventListener('click', () => {
@@ -86,6 +104,9 @@ if (game) {
     if (e.code !== 'Escape') return;
     if (!ui.el.help.classList.contains('hidden')) {
       closeHelp();
+      e.stopPropagation();
+    } else if (!ui.el.brief.classList.contains('hidden')) {
+      game.closeBriefing();
       e.stopPropagation();
     }
   });

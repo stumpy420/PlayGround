@@ -705,8 +705,9 @@ export class CampaignRun {
     if (cfg.damage) drone.damage = cfg.damage;
     if (cfg.hitRadius) drone.hitRadius = cfg.hitRadius;
     if (cfg.scale) drone.group.scale.setScalar(cfg.scale);
+    drone.name = cfg.name || 'PRIME HOSTILE';
     this.boss = drone;
-    this.game.ui.setBoss(true, cfg.name || 'PRIME HOSTILE', drone.health, drone.maxHealth);
+    this.game.ui.setBoss(true, drone.name, drone.health, drone.maxHealth);
   }
 
   playRadio(lines) {

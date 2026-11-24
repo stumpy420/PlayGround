@@ -192,6 +192,7 @@ export class UI {
 
   showBriefing(mission, progress) {
     if (!mission) return;
+    this.el.brief.classList.remove('hidden');
     this.el.briefEyebrow.textContent = `OPERATION ${mission.op} // ${CAMPAIGN_TITLE}`;
     this.el.briefTitle.textContent = mission.title;
     this.el.briefLocation.textContent = mission.location;
@@ -498,6 +499,10 @@ export class UI {
 
   showHelp(show) {
     this.el.help.classList.toggle('hidden', !show);
+  }
+
+  hideBriefing() {
+    this.el.brief.classList.add('hidden');
   }
 
   showPause(show) {

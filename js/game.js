@@ -939,7 +939,8 @@ export class Game {
         base.z + rand(-0.6, 0.6)
       ));
     }
-    this.scheduleRespawn();
+    // Campaign encounters are authored; free hunt keeps the respawn pool alive.
+    if (this.mode !== 'campaign') this.scheduleRespawn();
   }
 
   dropCargoAt(pos) {
@@ -998,6 +999,30 @@ export class Game {
   /* ---------------------------------------------------------------- */
   findInteractable() {
     const p = this.player.pos;
+
+    // Story props take priority so final choices can be made on the lift pad.
+    if (this.campaign) {
+      let bestProp = null;
+      let bestPropD = Infinity;
+      for (const prop of this.campaign.props) {
+        if (!prop.active || prop.used) continue;
+        const d = Math.hypot(p.x - prop.x, p.z - prop.z);
+        if (d < prop.radius + 1.2 && d < bestPropD) {
+          bestPropD = d;
+          bestProp = prop;
+        }
+      }
+      if (bestProp) {
+        return {
+          id: `campaign-${bestProp.id}`,
+          label: bestProp.label,
+          hold: bestProp.hold,
+          kind: 'campaign',
+          prop: bestProp,
+        };
+      }
+    }
+
     const liftDist = Math.hypot(p.x - ELEVATOR.x, p.z - ELEVATOR.z);
     if (liftDist < 8 && !this.extraction.active) {
       return { id: 'lift', label: 'CALL LIFT 04', hold: 2.4, kind: 'lift' };
@@ -1057,6 +1082,11 @@ export class Game {
   }
 
   completeInteract(target) {
+    if (target.kind === 'campaign') {
+      if (this.campaign) this.campaign.interact(target.prop);
+      return;
+    }
+
     if (target.kind === 'lift') {
       this.startExtraction();
       return;
@@ -1144,6 +1174,18 @@ export class Game {
     this.ui.setExtraction(false);
     this.ui.setPrompt(null);
 
+    let campaign = null;
+    if (this.mode === 'campaign' && this.campaign) {
+      campaign = this.campaign.onExtract();
+      this.campaignResult = campaign
+        ? (campaign.final
+          ? { kind: 'menu' }
+          : { kind: 'next', index: campaign.nextIndex })
+        : null;
+      this.ui.setBoss(false);
+      this.ui.clearComms();
+    }
+
     const aether = this.run.cores * CORE_VALUE;
     this.wallet.scrap += this.run.scrap;
     this.wallet.aether += aether;
@@ -1160,8 +1202,11 @@ export class Game {
       cores: this.run.cores,
       aether,
       total: aether,
+      campaign,
     });
-    this.ui.setObjective('EXTRACTION COMPLETE // CARGO BANKED');
+    this.ui.setObjective(campaign
+      ? `OPERATION ${campaign.op} COMPLETE`
+      : 'EXTRACTION COMPLETE // CARGO BANKED');
   }
 
   /* ---------------------------------------------------------------- */
@@ -1188,18 +1233,33 @@ export class Game {
 
   abandon() {
     if (this.state !== 'playing' && this.state !== 'paused') return;
+    let campaign = null;
+    if (this.mode === 'campaign' && this.campaign) {
+      campaign = this.campaign.failInfo();
+      this.campaignResult = { kind: 'retry', index: campaign.retryIndex };
+    }
     this.ui.showPause(false);
     this.state = 'dead';
     this.deathT = 0;
     this.endAt = performance.now();
     this.ui.setExtraction(false);
+    this.ui.setBoss(false);
+    this.ui.clearComms();
     this.dropCargoAt(this.player.pos);
     this.wallet.runs++;
     this.saveWallet();
     this.audio.setStorm(false);
     if (document.pointerLockElement) document.exitPointerLock();
     this.locked = false;
-    this.ui.showEnd({ success: false, abandoned: true, scrap: 0, cores: 0, aether: 0, total: 0 });
-    this.ui.setObjective('RUN ABANDONED');
+    this.ui.showEnd({
+      success: false,
+      abandoned: true,
+      scrap: 0,
+      cores: 0,
+      aether: 0,
+      total: 0,
+      campaign,
+    });
+    this.ui.setObjective(campaign ? 'OPERATION ABANDONED // RETRY AVAILABLE' : 'RUN ABANDONED');
   }
 }
