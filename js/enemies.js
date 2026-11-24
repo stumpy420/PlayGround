@@ -51,16 +51,17 @@ export class Drone {
   constructor(scene, position, variant = 'scout') {
     this.scene = scene;
     this.variant = variant;
-    this.heavy = variant === 'heavy';
+    this.prime = variant === 'prime';
+    this.heavy = variant === 'heavy' || this.prime;
     this.alive = true;
-    this.health = this.heavy ? 210 : 82;
+    this.health = this.prime ? 1400 : this.heavy ? 210 : 82;
     this.maxHealth = this.health;
-    this.hitRadius = this.heavy ? 1.35 : 0.95;
-    this.damage = this.heavy ? 13 : 7;
-    this.speed = this.heavy ? 4.4 : 6.6;
-    this.fireInterval = this.heavy ? 2.1 : 1.55;
-    this.boltSpeed = this.heavy ? 30 : 36;
-    this.altitude = this.heavy ? rand(3.2, 5.2) : rand(2.4, 4.4);
+    this.hitRadius = this.prime ? 2.0 : this.heavy ? 1.35 : 0.95;
+    this.damage = this.prime ? 18 : this.heavy ? 13 : 7;
+    this.speed = this.prime ? 3.7 : this.heavy ? 4.4 : 6.6;
+    this.fireInterval = this.prime ? 1.45 : this.heavy ? 2.1 : 1.55;
+    this.boltSpeed = this.prime ? 34 : this.heavy ? 30 : 36;
+    this.altitude = this.prime ? rand(4.6, 6.0) : this.heavy ? rand(3.2, 5.2) : rand(2.4, 4.4);
 
     this.anchor = position.clone();
     this.angle = rand(0, TAU);
@@ -79,13 +80,13 @@ export class Drone {
   }
 
   build() {
-    const s = this.heavy ? 1.55 : 1;
+    const s = this.prime ? 2.15 : this.heavy ? 1.55 : 1;
     const group = new THREE.Group();
     group.scale.setScalar(s);
     this.group = group;
 
     const hullMat = new THREE.MeshStandardMaterial({
-      color: this.heavy ? 0x3a2f2c : 0x2b2e32,
+      color: this.prime ? 0x471820 : this.heavy ? 0x3a2f2c : 0x2b2e32,
       roughness: 0.42,
       metalness: 0.78,
       flatShading: true,
@@ -143,6 +144,17 @@ export class Drone {
       barrel.rotation.x = Math.PI / 2;
       barrel.position.set(0, -0.28, -0.75);
       group.add(barrel);
+    }
+
+    if (this.prime) {
+      const crown = new THREE.Mesh(
+        new THREE.TorusGeometry(1.05, 0.06, 6, 24),
+        new THREE.MeshBasicMaterial({ color: 0xff3b46, toneMapped: false })
+      );
+      crown.rotation.x = Math.PI / 2;
+      crown.position.y = 0.62;
+      group.add(crown);
+      this.crown = crown;
     }
 
     group.position.copy(this.anchor);
@@ -240,10 +252,11 @@ export class Drone {
     }
 
     // visual state
-    const alertColor = this.state === 'engage' ? 0xff3b46 : 0x79f2ff;
+    const alertColor = this.state === 'engage' ? 0xff3b46 : this.prime ? 0xff7a5a : 0x79f2ff;
     this.eyeMat.color.setHex(alertColor);
-    this.ringMat.color.setHex(this.state === 'engage' ? 0xff5a3a : 0x2f8f9e);
+    this.ringMat.color.setHex(this.state === 'engage' ? 0xff5a3a : this.prime ? 0x8a2c22 : 0x2f8f9e);
     this.ring.rotation.z += dt * 2.5;
+    if (this.crown) this.crown.rotation.z += dt * 1.6;
     this.hullMat.emissive.setRGB(this.flash * 0.9, this.flash * 0.75, this.flash * 0.5);
     this.hullMat.emissiveIntensity = 1;
   }
@@ -261,7 +274,7 @@ export class Drone {
     ctx.game.spawnBolt(origin, dir, {
       damage: this.damage,
       speed: this.boltSpeed,
-      scale: this.heavy ? 1.5 : 1,
+      scale: this.prime ? 2.0 : this.heavy ? 1.5 : 1,
     });
     ctx.effects.muzzle(origin, 0xffa14a);
     ctx.game.audio.enemyShot(dist);
@@ -283,7 +296,9 @@ export class Drone {
 
   die(ctx) {
     this.alive = false;
-    ctx.effects.explosion(this.group.position, this.heavy ? 0xff7a2b : 0x79f2ff, this.heavy ? 22 : 13);
+    const color = this.prime ? 0xff3b46 : this.heavy ? 0xff7a2b : 0x79f2ff;
+    const size = this.prime ? 38 : this.heavy ? 22 : 13;
+    ctx.effects.explosion(this.group.position, color, size);
     this.scene.remove(this.group);
     ctx.game.onDroneKilled(this);
   }

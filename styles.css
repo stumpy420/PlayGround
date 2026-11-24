@@ -743,6 +743,190 @@ button { font-family: inherit; }
 #end-screen.fail .end-total b { color: var(--danger); }
 #end-screen.fail .end-stats div:nth-child(3) b { color: #ff8b96; }
 
+/* ============================================================
+   THE MOURNING CHOIR — campaign UI
+   ============================================================ */
+
+.campaign-strip {
+  max-width: 580px;
+  margin-top: 20px;
+  padding: 12px 14px 13px;
+  border: 1px solid rgba(121, 242, 255, .18);
+  background: linear-gradient(90deg, rgba(121, 242, 255, .06), rgba(10, 8, 7, .1));
+  clip-path: polygon(0 0, 100% 0, 100% calc(100% - 9px), calc(100% - 9px) 100%, 0 100%);
+}
+.campaign-strip-head {
+  display: flex; justify-content: space-between; gap: 12px;
+  font-size: 9px; letter-spacing: .24em; text-transform: uppercase;
+}
+.campaign-strip-head #campaign-label { color: var(--cyan); font-weight: 700; }
+.campaign-strip-head #campaign-sub { color: #8e7c6c; text-align: right; }
+.campaign-pips { display: flex; gap: 6px; margin-top: 11px; }
+.campaign-pips i { flex: 1; height: 3px; background: rgba(255, 226, 197, .13); }
+.campaign-pips i.done {
+  background: var(--amber);
+  box-shadow: 0 0 9px rgba(255, 176, 87, .45);
+}
+.campaign-pips i.current {
+  background: var(--cyan);
+  box-shadow: 0 0 12px rgba(121, 242, 255, .7);
+  animation: blink 1.6s infinite;
+}
+#freehunt-btn { min-width: 118px; }
+
+.mission-panel {
+  position: absolute;
+  top: 128px;
+  left: 16px;
+  width: 268px;
+  padding: 12px 14px 13px;
+  background: linear-gradient(100deg, rgba(8, 6, 5, .82), rgba(8, 6, 5, .34));
+  border-left: 2px solid var(--amber);
+  pointer-events: none;
+}
+.mission-op {
+  display: block;
+  font-size: 8px; letter-spacing: .24em; color: var(--amber);
+  text-transform: uppercase;
+}
+.mission-title {
+  display: block;
+  font-family: var(--display); font-size: 15px; letter-spacing: .08em;
+  color: #fff2e2; margin: 4px 0 10px;
+}
+.mission-steps { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
+.mission-step {
+  display: grid; grid-template-columns: 12px minmax(0, 1fr) auto;
+  gap: 8px; align-items: center;
+  font-size: 10px; letter-spacing: .12em; text-transform: uppercase;
+  color: #76695e;
+}
+.mission-step .ms-mark {
+  width: 8px; height: 8px;
+  border: 1px solid #6a5d52;
+  transform: rotate(45deg);
+}
+.mission-step .ms-label { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.mission-step .ms-count { font-family: var(--display); font-size: 9px; color: var(--cyan); }
+.mission-step.done { color: #a8998a; }
+.mission-step.done .ms-mark { border-color: var(--amber); background: var(--amber); }
+.mission-step.current { color: #f5e8da; }
+.mission-step.current .ms-mark {
+  border-color: var(--cyan);
+  background: var(--cyan);
+  box-shadow: 0 0 10px rgba(121, 242, 255, .8);
+}
+
+.boss-bar {
+  position: absolute;
+  top: 74px; left: 50%;
+  transform: translateX(-50%);
+  width: min(540px, 62vw);
+}
+.boss-head {
+  display: flex; justify-content: space-between; gap: 12px;
+  margin-bottom: 5px;
+  font-size: 9px; letter-spacing: .22em; color: #ff8b96;
+}
+.boss-head b { font-family: var(--display); font-size: 10px; color: #fff0e7; }
+.boss-track {
+  height: 7px; padding: 1px;
+  border: 1px solid rgba(255, 77, 94, .4);
+  background: rgba(10, 7, 6, .78);
+}
+.boss-track i {
+  display: block; height: 100%; width: 100%;
+  background: linear-gradient(90deg, #ff3b46, #ff8a2b);
+  box-shadow: 0 0 16px rgba(255, 77, 94, .6);
+  transition: width .12s linear;
+}
+
+.comms {
+  position: absolute;
+  left: 50%; bottom: 118px;
+  transform: translateX(-50%);
+  width: min(700px, 86vw);
+  padding: 12px 20px;
+  background: linear-gradient(90deg, rgba(6, 5, 4, 0), rgba(10, 8, 7, .86) 12%, rgba(10, 8, 7, .86) 88%, rgba(6, 5, 4, 0));
+  border-left: 1px solid var(--cyan-dim);
+  border-right: 1px solid var(--cyan-dim);
+  pointer-events: none;
+}
+.comms-speaker {
+  font-family: var(--display); font-size: 10px;
+  letter-spacing: .26em; color: var(--cyan);
+}
+.comms-speaker[data-role="warden"] { color: var(--danger); }
+.comms p {
+  margin: 6px 0 4px;
+  min-height: 1.45em;
+  font-size: 14px; line-height: 1.45;
+  color: #eee2d4;
+}
+.comms-tag { font-size: 8px; letter-spacing: .24em; color: #6f6258; }
+
+.marker.waypoint { color: var(--cyan); }
+.marker.waypoint .m-icon {
+  border-width: 2px;
+  box-shadow: 0 0 16px rgba(121, 242, 255, .75);
+  animation: waypointPulse 1.8s ease-in-out infinite;
+}
+.marker.waypoint .m-label { color: #d7fbff; }
+@keyframes waypointPulse { 50% { transform: rotate(45deg) scale(1.25); } }
+
+.brief-card { width: min(800px, 100%); }
+.brief-loc {
+  display: flex; justify-content: space-between; gap: 12px;
+  padding: 8px 0 14px; margin-bottom: 14px;
+  border-bottom: 1px solid var(--line);
+  font-size: 9px; letter-spacing: .2em; text-transform: uppercase;
+  color: #9a8a7b;
+}
+.brief-loc b { color: #ff8b96; font-weight: 700; text-align: right; }
+.brief-story p {
+  margin: 0 0 10px;
+  font-size: 14px; line-height: 1.55;
+  color: #b9a896;
+}
+.brief-quote {
+  margin: 16px 0;
+  padding: 12px 16px;
+  border-left: 2px solid var(--cyan);
+  background: rgba(121, 242, 255, .05);
+}
+.brief-quote span {
+  font-family: var(--display); font-size: 10px;
+  letter-spacing: .24em; color: var(--cyan);
+}
+.brief-quote span[data-role="warden"] { color: var(--danger); }
+.brief-quote p {
+  margin: 6px 0 0;
+  font-size: 14px; line-height: 1.5; font-style: italic;
+  color: #e9dccd;
+}
+.brief-objectives > span {
+  font-size: 9px; letter-spacing: .26em; color: var(--amber);
+  text-transform: uppercase;
+}
+.brief-objectives ol {
+  list-style: none; margin: 9px 0 0; padding: 0;
+  display: grid; gap: 6px;
+}
+.brief-objectives li {
+  display: flex; gap: 12px; align-items: baseline;
+  font-size: 12px; letter-spacing: .08em;
+  text-transform: uppercase; color: #c9b8a7;
+}
+.brief-objectives .num { font-family: var(--display); font-size: 9px; color: var(--amber); }
+.brief-actions { display: flex; gap: 10px; margin-top: 20px; flex-wrap: wrap; }
+.brief-actions .btn { padding: 12px 22px; font-size: 12px; }
+
+#end-screen.campaign .end-card { border-color: rgba(121, 242, 255, .28); }
+#end-screen.campaign .eyebrow { color: var(--cyan); }
+#end-screen.campaign .modal-note { font-size: 13px; line-height: 1.6; color: #c9b8a7; }
+#end-screen.campaign.fail .eyebrow { color: var(--danger); }
+#end-screen.campaign.fail h2 { color: #ffb6bd; }
+
 .fatal {
   position: fixed; inset: 0; z-index: 90;
   background: #0b0908;
@@ -830,4 +1014,37 @@ button { font-family: inherit; }
   .brief { padding: 18px 22px; }
   .brief-list li { padding: 8px 0; }
   .wallet-strip { margin-top: 18px; padding-top: 12px; }
+  .campaign-strip { margin-top: 12px; }
+  .comms { bottom: 92px; }
+}
+
+@media (max-width: 1000px) {
+  .mission-panel { top: 112px; width: 226px; }
+  .boss-bar { width: 74vw; }
+  .comms { bottom: 104px; }
+}
+@media (max-width: 760px) {
+  .campaign-strip { margin-top: 14px; padding: 10px 12px; }
+  .campaign-strip-head { font-size: 8px; }
+  .mission-panel { top: 88px; left: 10px; width: 204px; padding: 8px 10px; }
+  .mission-title { font-size: 12px; margin-bottom: 7px; }
+  .mission-step { font-size: 9px; grid-template-columns: 10px minmax(0, 1fr) auto; gap: 6px; }
+  .boss-bar { top: 54px; width: 82vw; }
+  .boss-head { font-size: 8px; }
+  .comms { bottom: 150px; width: 92vw; padding: 8px 12px; }
+  .comms p { font-size: 12px; }
+  .comms-tag { font-size: 7px; }
+  .brief-card { max-height: 92vh; }
+  .brief-loc { font-size: 8px; }
+  .brief-story p { font-size: 13px; }
+  .brief-quote p { font-size: 13px; }
+}
+@media (max-width: 640px) {
+  .mission-panel { top: 80px; width: 172px; }
+  .mission-op { font-size: 7px; }
+  .mission-title { font-size: 11px; }
+  .mission-step { font-size: 8px; letter-spacing: .06em; }
+  .comms { bottom: 164px; }
+  .start-actions .btn { flex: 1 1 auto; padding: 10px 16px; }
+  .brief-actions .btn { flex: 1 1 auto; }
 }
