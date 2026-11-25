@@ -32,6 +32,63 @@ function canvasTexture(w, h, draw) {
   return tex;
 }
 
+function makeAsphaltTexture() {
+  const tex = canvasTexture(256, 256, (ctx, w, h) => {
+    ctx.fillStyle = '#2b3235'; ctx.fillRect(0, 0, w, h);
+    const rnd = mulberry32(77123);
+    for (let i = 0; i < 5200; i++) {
+      const g = 26 + Math.floor(rnd() * 44);
+      ctx.fillStyle = `rgba(${g},${g + 3},${g + 4},${.25 + rnd() * .45})`;
+      const s = rnd() * 2.2 + .4;
+      ctx.fillRect(rnd() * w, rnd() * h, s, s);
+    }
+    // wet patches and tar seams
+    for (let i = 0; i < 9; i++) {
+      const x = rnd() * w, y = rnd() * h, r = 16 + rnd() * 42;
+      const grd = ctx.createRadialGradient(x, y, 0, x, y, r);
+      grd.addColorStop(0, 'rgba(12,20,23,.4)');
+      grd.addColorStop(1, 'rgba(12,20,23,0)');
+      ctx.fillStyle = grd; ctx.fillRect(x - r, y - r, r * 2, r * 2);
+    }
+    ctx.strokeStyle = 'rgba(8,12,13,.55)'; ctx.lineWidth = 2;
+    for (let i = 0; i < 4; i++) {
+      ctx.beginPath(); let x = rnd() * w, y = 0;
+      ctx.moveTo(x, y);
+      while (y < h) { y += 18 + rnd() * 26; x += (rnd() - .5) * 18; ctx.lineTo(x, y); }
+      ctx.stroke();
+    }
+  });
+  tex.wrapS = tex.wrapT = THREE.RepeatWrapping;
+  tex.anisotropy = 8;
+  return tex;
+}
+
+function makeConcreteTexture() {
+  const tex = canvasTexture(256, 256, (ctx, w, h) => {
+    ctx.fillStyle = '#565d5a'; ctx.fillRect(0, 0, w, h);
+    const rnd = mulberry32(44881);
+    for (let i = 0; i < 4200; i++) {
+      const g = 62 + Math.floor(rnd() * 40);
+      ctx.fillStyle = `rgba(${g},${g + 2},${g},${.18 + rnd() * .35})`;
+      ctx.fillRect(rnd() * w, rnd() * h, rnd() * 2 + .5, rnd() * 2 + .5);
+    }
+    // expansion joints
+    ctx.strokeStyle = 'rgba(20,26,25,.6)'; ctx.lineWidth = 3;
+    ctx.strokeRect(1.5, 1.5, w - 3, h - 3);
+    ctx.beginPath(); ctx.moveTo(w / 2, 0); ctx.lineTo(w / 2, h); ctx.stroke();
+    // stains
+    for (let i = 0; i < 7; i++) {
+      const x = rnd() * w, y = rnd() * h, r = 10 + rnd() * 26;
+      const grd = ctx.createRadialGradient(x, y, 0, x, y, r);
+      grd.addColorStop(0, 'rgba(28,38,36,.3)'); grd.addColorStop(1, 'rgba(28,38,36,0)');
+      ctx.fillStyle = grd; ctx.fillRect(x - r, y - r, r * 2, r * 2);
+    }
+  });
+  tex.wrapS = tex.wrapT = THREE.RepeatWrapping;
+  tex.anisotropy = 8;
+  return tex;
+}
+
 function makeFacadeTexture(base, accent, seed, style='brick') {
   const rnd = mulberry32(seed);
   return canvasTexture(256, 256, (ctx, w, h) => {
@@ -128,7 +185,7 @@ export class World {
     this.weather = 'rain';
     this.weirdness = .1;
     this.arena = { x:420, z:-300, y:0 };
-    this.spawn = { x:-18, z:58, yaw:Math.PI };
+    this.spawn = { x:-18, z:58, yaw:0 };
     this.districtMarkers = DISTRICTS;
     this.districtZones = [];
     this.puddles = [];
@@ -246,6 +303,7 @@ export class World {
     this.sun.shadow.camera.bottom = -95;
     this.sun.shadow.bias = -.0005;
     this.sun.shadow.normalBias = .025;
+    this.sun.shadow.radius = 2.5;
     this.scene.add(this.sun);
     this.scene.add(this.sun.target);
     const fill = new THREE.DirectionalLight(0x6c8a94, .55);
@@ -275,6 +333,12 @@ export class World {
         const n = Math.sin(x * .025) * Math.cos(z * .021) * 1.4 + Math.sin(x * .071 + z * .043) * .4;
         if (d > 270) y += n * clamp((d - 270) / 150, 0, 1);
       }
+      // Terminal 9 sits on a flat plateau carved out of the eastern ridge.
+      // Without this the arena (and the player, who always stands at y=0)
+      // ended up buried under ~40m of terrain.
+      const da = Math.hypot(x - this.arena.x, z - this.arena.z);
+      if (da < 46) y = 0;
+      else if (da < 80) y *= (da - 46) / 34;
       pos.setY(i, y);
     }
     geo.computeVertexNormals();
@@ -359,16 +423,22 @@ export class World {
   }
 
   buildRoads() {
-    const roadMat = new THREE.MeshStandardMaterial({ color:0x191f20, roughness:.26, metalness:.5 });
-    const walkMat = new THREE.MeshStandardMaterial({ color:0x4a504e, roughness:.78, metalness:.08 });
+    const roadMat = new THREE.MeshStandardMaterial({ map:makeAsphaltTexture(), color:0xd6dcdc, roughness:.38, metalness:.34 });
+    const walkMat = new THREE.MeshStandardMaterial({ map:makeConcreteTexture(), color:0xd0d4d0, roughness:.7, metalness:.1 });
     const curbMat = new THREE.MeshStandardMaterial({ color:0x686e6a, roughness:.85 });
     const markMat = new THREE.MeshBasicMaterial({ color:0x9d9a78 });
     const xs = [-130, -70, -10, 50, 110, 170];
     const zs = [-170, -110, -50, 10, 70, 130, 190];
     const roadW = 12, walkW = 4.2;
+    // Ground strips use world-scaled UVs so the tiling stays uniform on both
+    // the long avenues and the cross streets.
     const addStrip = (x, z, w, d, y, mat) => {
-      const m = new THREE.Mesh(shared.box, mat);
-      m.position.set(x, y, z); m.scale.set(w, .06, d); m.receiveShadow = true; this.scene.add(m);
+      const geo = new THREE.PlaneGeometry(w, d);
+      geo.rotateX(-Math.PI / 2);
+      const uv = geo.attributes.uv;
+      for (let i = 0; i < uv.count; i++) uv.setXY(i, uv.getX(i) * w / 4, uv.getY(i) * d / 4);
+      const m = new THREE.Mesh(geo, mat);
+      m.position.set(x, y, z); m.receiveShadow = true; this.scene.add(m);
     };
     for (const x of xs) {
       addStrip(x, 10, roadW + walkW * 2, 420, .015, walkMat);
@@ -721,7 +791,7 @@ export class World {
 
     // bus stops / benches / trash / hydrants
     const benchMat = new THREE.MeshStandardMaterial({ color:0x4b3d30, roughness:.9 });
-    for (const [x,z,rot] of [[-16,54,0],[-12,-52,0],[46,66,1],[-96,164,0],[206,-102,0]]) {
+    for (const [x,z,rot] of [[-16,66,0],[-12,-52,0],[46,66,1],[-96,164,0],[206,-102,0]]) {
       const bench = new THREE.Group();
       const seat = new THREE.Mesh(new THREE.BoxGeometry(2.3, .12, .5), benchMat); seat.position.y = .55; bench.add(seat);
       const back = new THREE.Mesh(new THREE.BoxGeometry(2.3, .65, .1), benchMat); back.position.set(0, .9, -.22); bench.add(back);
@@ -849,25 +919,56 @@ export class World {
   buildArena() {
     const a = this.arena;
     const group = new THREE.Group();
-    const floorMat = new THREE.MeshStandardMaterial({ color:0x202325, roughness:.42, metalness:.3 });
-    const floor = new THREE.Mesh(new THREE.CylinderGeometry(34,34,.6,48), floorMat); floor.position.y = -.3; group.add(floor);
-    const ringMat = new THREE.MeshStandardMaterial({ color:0x5d2420, roughness:.4, metalness:.2 });
-    const ring = new THREE.Mesh(new THREE.CylinderGeometry(12,12,1.3,8), ringMat); ring.position.y = .35; group.add(ring);
-    const canvasMat = new THREE.MeshStandardMaterial({ color:0x252d2e, roughness:.55 });
-    const canvas = new THREE.Mesh(new THREE.CylinderGeometry(11.4,11.4,.16,8), canvasMat); canvas.position.y = 1.03; group.add(canvas);
+    // Ring, lights, crowd and signage are authored around the origin, so the
+    // whole group is placed at Terminal 9 instead of drifting into downtown.
+    group.position.set(a.x, 0, a.z);
+    const floorMat = new THREE.MeshStandardMaterial({ color:0x2c3334, roughness:.5, metalness:.25 });
+    const floor = new THREE.Mesh(new THREE.CylinderGeometry(34,34,.6,48), floorMat); floor.position.y = -.29; group.add(floor);
+    const ringMat = new THREE.MeshStandardMaterial({ color:0x6b2a24, roughness:.4, metalness:.2 });
+    const ring = new THREE.Mesh(new THREE.CylinderGeometry(12,12,1.3,8), ringMat); ring.position.y = -.62; group.add(ring);
+    // Canvas sits at ground level: the player has no vertical collision, so a
+    // raised apron would bury fighters waist-deep in the ring.
+    const canvasMat = new THREE.MeshStandardMaterial({ color:0x3b4647, roughness:.5 });
+    const canvas = new THREE.Mesh(new THREE.CylinderGeometry(11.4,11.4,.16,8), canvasMat); canvas.position.y = .02; group.add(canvas);
+    // Painted canvas logo.
+    const logoTex = canvasTexture(512, 512, (ctx, w, h) => {
+      ctx.clearRect(0, 0, w, h);
+      ctx.strokeStyle = 'rgba(255,67,56,.55)'; ctx.lineWidth = 10;
+      ctx.beginPath(); ctx.arc(w/2, h/2, 190, 0, TAU); ctx.stroke();
+      ctx.strokeStyle = 'rgba(127,227,210,.35)'; ctx.lineWidth = 3;
+      ctx.beginPath(); ctx.arc(w/2, h/2, 205, 0, TAU); ctx.stroke();
+      ctx.fillStyle = 'rgba(255,67,56,.72)';
+      ctx.font = '700 84px Bebas, sans-serif'; ctx.textAlign = 'center';
+      ctx.fillText('TERMINAL 9', w/2, h/2 - 6);
+      ctx.fillStyle = 'rgba(127,227,210,.6)';
+      ctx.font = '400 28px Plex, monospace';
+      ctx.fillText('THE UNDERCURRENT', w/2, h/2 + 44);
+    });
+    const logo = new THREE.Mesh(new THREE.CircleGeometry(8.2, 32), new THREE.MeshBasicMaterial({ map:logoTex, transparent:true, toneMapped:false, depthWrite:false }));
+    logo.rotation.x = -Math.PI/2; logo.position.y = .105; group.add(logo);
+    // Floodlights: the ring used to be lit only by tiny point lights, which
+    // left the canvas and floor pitch black at night.
+    const flood = new THREE.SpotLight(0xfff1d6, 850, 90, .78, .55, 2);
+    flood.position.set(-15, 24, 4); flood.target.position.set(0, 0, 0);
+    group.add(flood); group.add(flood.target);
+    const flood2 = new THREE.SpotLight(0xd8f3ee, 620, 90, .72, .6, 2);
+    flood2.position.set(16, 20, -10); flood2.target.position.set(0, 0, 0);
+    group.add(flood2); group.add(flood2.target);
+    const ringGlow = new THREE.PointLight(0xffd9b0, 90, 34, 2);
+    ringGlow.position.set(0, 9, 0); group.add(ringGlow);
     const postMat = new THREE.MeshStandardMaterial({ color:0x4f5c5b, roughness:.3, metalness:.65 });
-    const ropeMat = new THREE.MeshBasicMaterial({ color:0x9b2e29 });
+    const ropeMat = new THREE.MeshBasicMaterial({ color:0xb5352d, toneMapped:false });
     for (let i = 0; i < 8; i++) {
       const ang = i / 8 * TAU;
       const post = new THREE.Mesh(new THREE.CylinderGeometry(.14,.18,2.3,8), postMat);
-      post.position.set(Math.cos(ang) * 11.5, 2.15, Math.sin(ang) * 11.5); group.add(post);
+      post.position.set(Math.cos(ang) * 11.5, 1.15, Math.sin(ang) * 11.5); group.add(post);
     }
     for (let l = 0; l < 3; l++) {
       for (let i = 0; i < 8; i++) {
         const ang = i / 8 * TAU;
         const rope = new THREE.Mesh(new THREE.CylinderGeometry(.035,.035,2*11.5*Math.sin(Math.PI/8),6), ropeMat);
         rope.rotation.z = Math.PI/2;
-        rope.position.set(Math.cos(ang + Math.PI/8) * 11.5 * Math.cos(Math.PI/8), 1.35 + l * .45, Math.sin(ang + Math.PI/8) * 11.5 * Math.cos(Math.PI/8));
+        rope.position.set(Math.cos(ang + Math.PI/8) * 11.5 * Math.cos(Math.PI/8), .58 + l * .3, Math.sin(ang + Math.PI/8) * 11.5 * Math.cos(Math.PI/8));
         rope.rotation.y = -ang - Math.PI/8;
         group.add(rope);
       }
@@ -888,7 +989,7 @@ export class World {
       const body = new THREE.Mesh(new THREE.CapsuleGeometry(.25,.65,3,6), new THREE.MeshStandardMaterial({ color:[0x1a2223,0x242b2c,0x30282a][i%3], roughness:1 }));
       body.position.y = .75; p.add(body);
       const head = new THREE.Mesh(new THREE.SphereGeometry(.22,7,5), new THREE.MeshStandardMaterial({ color:0x443a34, roughness:1 })); head.position.y = 1.5; p.add(head);
-      p.position.set(a.x + Math.cos(ang) * r, .2 + this.rng() * 1.6, a.z + Math.sin(ang) * r);
+      p.position.set(Math.cos(ang) * r, 0, Math.sin(ang) * r);
       p.rotation.y = -ang; group.add(p); this.arenaCrowd.push({ obj:p, phase:this.rng()*TAU });
     }
     // banners
@@ -896,19 +997,18 @@ export class World {
     banners.forEach(([text,col],i) => {
       const tex = makeSignTexture(text, col, '#0a0f10', 'TERMINAL 9 · BELLINGHAM');
       const banner = new THREE.Mesh(new THREE.PlaneGeometry(18,4.5), new THREE.MeshBasicMaterial({ map:tex, transparent:true, toneMapped:false, side:THREE.DoubleSide }));
-      banner.position.set(a.x - 24 + i * 24, 11, a.z - 25); group.add(banner);
-      const post = new THREE.Mesh(new THREE.BoxGeometry(.2,12,.2), postMat); post.position.set(a.x - 24 + i * 24, 6, a.z - 25.2); group.add(post);
+      banner.position.set(-24 + i * 24, 11, -25); group.add(banner);
+      const post = new THREE.Mesh(new THREE.BoxGeometry(.2,12,.2), postMat); post.position.set(-24 + i * 24, 6, -25.2); group.add(post);
     });
     // big screen
     const screenTex = canvasTexture(512,256,(ctx,w,h)=>{ctx.fillStyle='#081011';ctx.fillRect(0,0,w,h);ctx.fillStyle='#ff4338';ctx.font='400 76px Bebas, sans-serif';ctx.textAlign='center';ctx.fillText('THE UNDERCURRENT',w/2,110);ctx.fillStyle='#7fe3d2';ctx.font='400 22px Plex, monospace';ctx.fillText('ALL FIGHTERS ARE ADULTS · ALL FIGHTS ARE CONSENSUAL',w/2,165);ctx.strokeStyle='rgba(255,255,255,.15)';ctx.strokeRect(10,10,w-20,h-20);});
     const screen = new THREE.Mesh(new THREE.PlaneGeometry(30,15), new THREE.MeshBasicMaterial({ map:screenTex, toneMapped:false }));
-    screen.position.set(a.x, 15, a.z + 30); screen.rotation.y = Math.PI; group.add(screen);
+    screen.position.set(0, 15, 30); screen.rotation.y = Math.PI; group.add(screen);
     // terminal
     const terminal = new THREE.Mesh(new THREE.BoxGeometry(2.5,1.4,1.2), new THREE.MeshStandardMaterial({ color:0x273436, roughness:.4, metalness:.5 }));
-    terminal.position.set(a.x + 15, 1.4, a.z - 15); group.add(terminal);
+    terminal.position.set(15, 1.4, -15); group.add(terminal);
     const termScreen = new THREE.Mesh(new THREE.PlaneGeometry(1.9,.9), new THREE.MeshBasicMaterial({ color:0x7fe3d2, toneMapped:false }));
-    termScreen.position.set(a.x + 15, 1.65, a.z - 14.38); group.add(termScreen);
-    group.position.set(0,0,0);
+    termScreen.position.set(15, 1.65, -14.38); group.add(termScreen);
     this.scene.add(group);
     this.arenaGroup = group;
     this.interactables.push({ id:'arena_terminal', label:'Undercard Terminal', sub:'CHOOSE YOUR ROUND', x:a.x + 15, z:a.z - 15, radius:4, action:'arena', type:'arena' });
@@ -943,19 +1043,66 @@ export class World {
   }
 
   buildWeather() {
-    const count = 3200;
+    // GPU rain: every streak is a two-vertex line whose fall is computed in
+    // the vertex shader from a single time uniform. The CPU never touches the
+    // position buffer, which removes ~3200 matrix updates and a full buffer
+    // upload per frame from the old implementation.
+    const count = 3600;
     const geo = new THREE.BufferGeometry();
     const positions = new Float32Array(count * 6);
+    const ends = new Float32Array(count * 2);
+    const speeds = new Float32Array(count * 2);
+    const lengths = new Float32Array(count * 2);
     for (let i = 0; i < count; i++) {
-      const x = (Math.random() - .5) * 70, y = Math.random() * 34, z = (Math.random() - .5) * 70;
+      const x = (Math.random() - .5) * 74, y = Math.random() * 34, z = (Math.random() - .5) * 74;
+      const len = .85 + Math.random() * .85;
       positions[i*6] = x; positions[i*6+1] = y; positions[i*6+2] = z;
-      positions[i*6+3] = x + .08; positions[i*6+4] = y - .9 - Math.random()*.8; positions[i*6+5] = z;
+      positions[i*6+3] = x + .07; positions[i*6+4] = y; positions[i*6+5] = z;
+      ends[i*2] = 0; ends[i*2+1] = 1;
+      speeds[i*2] = speeds[i*2+1] = 24 + Math.random() * 10;
+      lengths[i*2] = lengths[i*2+1] = len;
     }
-    geo.setAttribute('position', new THREE.BufferAttribute(positions,3));
-    const mat = new THREE.LineBasicMaterial({ color:0xaac3c6, transparent:true, opacity:.34 });
+    geo.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+    geo.setAttribute('aEnd', new THREE.BufferAttribute(ends, 1));
+    geo.setAttribute('aSpeed', new THREE.BufferAttribute(speeds, 1));
+    geo.setAttribute('aLen', new THREE.BufferAttribute(lengths, 1));
+
+    const mat = new THREE.ShaderMaterial({
+      transparent: true,
+      depthWrite: false,
+      uniforms: {
+        uTime: { value: 0 },
+        uOpacity: { value: .34 },
+        uWind: { value: .35 },
+        uColor: { value: new THREE.Color(0xaac3c6) }
+      },
+      vertexShader: /* glsl */`
+        attribute float aEnd;
+        attribute float aSpeed;
+        attribute float aLen;
+        uniform float uTime;
+        uniform float uWind;
+        varying float vFade;
+        void main() {
+          float y = mod(position.y - uTime * aSpeed, 34.0);
+          y -= aEnd * aLen;
+          float drift = (34.0 - y) * uWind * 0.06;
+          vec3 p = vec3(position.x + drift, y, position.z);
+          vFade = 1.0 - smoothstep(24.0, 34.0, y);
+          gl_Position = projectionMatrix * modelViewMatrix * vec4(p, 1.0);
+        }
+      `,
+      fragmentShader: /* glsl */`
+        uniform float uOpacity;
+        uniform vec3 uColor;
+        varying float vFade;
+        void main() {
+          gl_FragColor = vec4(uColor, uOpacity * vFade);
+        }
+      `
+    });
     this.rain = new THREE.LineSegments(geo, mat); this.rain.frustumCulled = false; this.scene.add(this.rain);
     this.rainCount = count;
-    this.rainPositions = positions;
 
     // fog banks
     const fogTex = makeGlowTexture('#a0b4b4');
@@ -1053,14 +1200,16 @@ export class World {
     sky.uStorm.value = storm; sky.uNight.value = night;
     this.scene.fog.color.lerp(new THREE.Color(storm ? 0x465557 : 0x708083).multiplyScalar(lerp(1, .28, night)), blend);
     this.scene.fog.density = lerp(this.scene.fog.density, w.fog, blend);
-    this.hemi.intensity = lerp(this.hemi.intensity, w.light * lerp(.95, .24, night), blend);
+    this.hemi.intensity = lerp(this.hemi.intensity, w.light * lerp(.95, .32, night), blend);
     this.sun.intensity = lerp(this.sun.intensity, w.light * lerp(1.3, .14, night), blend);
     this.stars.material.opacity = night * (this.weather === 'clear' ? .8 : .1);
     if (this.rain) {
-      this.rain.material.opacity = lerp(this.rain.material.opacity, w.rain ? .3 + storm * .18 : 0, blend);
+      const u = this.rain.material.uniforms;
+      u.uOpacity.value = lerp(u.uOpacity.value, w.rain ? .3 + storm * .18 : 0, blend);
+      u.uWind.value = .18 + (w.wind || .6) * .3;
       this.rain.visible = w.rain > 0;
     }
-    this.renderer.toneMappingExposure = lerp(this.renderer.toneMappingExposure, lerp(1.38, .66, night), blend);
+    this.renderer.toneMappingExposure = lerp(this.renderer.toneMappingExposure, lerp(1.16, .74, night), blend);
   }
 
   nightFactor() {
@@ -1101,22 +1250,10 @@ export class World {
     if (this.water) this.water.material.uniforms.uTime.value = elapsed;
     if (this.lake) this.lake.material.uniforms.uTime.value = elapsed;
     if (this.oceanDowntown) this.oceanDowntown.material.uniforms.uTime.value = elapsed;
-    // rain follows player
+    // Rain is fully GPU-driven; only the time uniform and follow position move.
     if (this.rain) {
       this.rain.position.set(playerPos.x, 0, playerPos.z);
-      const arr = this.rainPositions;
-      const speed = 26 + (WEATHER[this.weather]?.wind || .6) * 8;
-      for (let i = 0; i < this.rainCount; i++) {
-        const idx = i * 6;
-        arr[idx + 1] -= speed * dt;
-        arr[idx + 4] -= speed * dt;
-        if (arr[idx + 1] < 0) {
-          const x = (Math.random() - .5) * 72, z = (Math.random() - .5) * 72;
-          arr[idx] = x; arr[idx + 1] = 26 + Math.random() * 12; arr[idx + 2] = z;
-          arr[idx + 3] = x + .1; arr[idx + 4] = arr[idx + 1] - .9; arr[idx + 5] = z;
-        }
-      }
-      this.rain.geometry.attributes.position.needsUpdate = true;
+      this.rain.material.uniforms.uTime.value = elapsed;
     }
     // fog banks drift
     if (this.fogParticles) for (const f of this.fogParticles) {

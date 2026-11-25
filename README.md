@@ -74,6 +74,7 @@ Phones and tablets get a virtual stick, a look area, and context buttons for int
 index.html          DOM shell, HUD, menus, touch controls
 styles.css          all layout and visual styling
 src/main.js         orchestrator: state, story, jobs, phone, endings, input
+src/post.js         bloom, noir grade, vignette, film grain, mobile scaling
 src/world.js        procedural city, weather, arena, interactables
 src/player.js       first-person movement, collision, driving, arms
 src/npcs.js         NPC models, schedules, memory, ambient crowds
@@ -86,6 +87,12 @@ fonts/              local display and text fonts
 ```
 
 Saves use `localStorage` under `bellingham_underground_save_v3`. The pause menu can erase a save.
+
+## Rendering
+
+The renderer uses ACES tone mapping, PCF shadows, a procedural image-based light probe, and a lightweight post stack (`src/post.js`): threshold bloom, a teal/sodium noir grade, lens vignette, and film grain. Rain is animated entirely in a vertex shader, so the CPU no longer uploads thousands of line segments every frame. Touch devices render the post stack at a reduced internal resolution and skip MSAA.
+
+`SETTINGS → CINEMATIC EFFECTS` disables the post stack, and `REDUCED MOTION` also disables grain and CSS motion. Both choices are saved.
 
 ## Notes
 

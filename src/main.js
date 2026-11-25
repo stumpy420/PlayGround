@@ -5,6 +5,7 @@ import { NPCSystem } from './npcs.js';
 import { Combat } from './combat.js';
 import { UI, fmt, $ } from './ui.js';
 import { Audio } from './audio.js';
+import { PostFX } from './post.js';
 import {
   BUSINESSES, ITEMS, NPCS, BOSSES, QUESTS, SIDE_QUESTS, EVENTS, ENCOUNTERS, ENDINGS,
   STYLES, WEATHER, DISTRICTS, HAIRSTYLES, OUTFITS, TATTOOS, RANKS
@@ -21,7 +22,7 @@ const renderer = new THREE.WebGLRenderer({ canvas, antialias:true, powerPreferen
 renderer.setPixelRatio(Math.min(devicePixelRatio || 1, 2));
 renderer.setSize(innerWidth, innerHeight);
 renderer.shadowMap.enabled = true;
-renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+renderer.shadowMap.type = THREE.PCFShadowMap;
 renderer.toneMapping = THREE.ACESFilmicToneMapping;
 renderer.toneMappingExposure = 1.08;
 renderer.outputColorSpace = THREE.SRGBColorSpace;
@@ -29,6 +30,10 @@ renderer.outputColorSpace = THREE.SRGBColorSpace;
 const scene = new THREE.Scene();
 const camera = new THREE.PerspectiveCamera(72, innerWidth / innerHeight, .08, 1600);
 scene.add(camera);
+
+const post = new PostFX(renderer, scene, camera, { lowPower: isTouch });
+post.setSize(innerWidth, innerHeight, Math.min(devicePixelRatio || 1, 2));
+installEnvironment();
 
 const audio = new Audio();
 let world, npcs, player, ui, combat;
@@ -54,6 +59,52 @@ let touchSprint = false;
 let touchMove = { x:0, z:0 };
 let touchLook = null;
 let toastWarned = {};
+
+function installEnvironment() {
+  // A small procedural equirectangular sky. PMREM turns it into the IBL
+  // probe used by MeshStandardMaterial, so wet streets, brass, and glass
+  // pick up believable reflections without shipping a large HDRI.
+  const c = document.createElement('canvas');
+  c.width = 1024; c.height = 512;
+  const ctx = c.getContext('2d');
+  const sky = ctx.createLinearGradient(0, 0, 0, 512);
+  sky.addColorStop(0, '#0d181d');
+  sky.addColorStop(0.42, '#33484e');
+  sky.addColorStop(0.58, '#8fa0a0');
+  sky.addColorStop(0.72, '#5d6d6e');
+  sky.addColorStop(1, '#101819');
+  ctx.fillStyle = sky;
+  ctx.fillRect(0, 0, 1024, 512);
+
+  const glow = ctx.createRadialGradient(300, 300, 8, 300, 300, 360);
+  glow.addColorStop(0, 'rgba(255, 196, 128, .55)');
+  glow.addColorStop(0.35, 'rgba(255, 126, 76, .18)');
+  glow.addColorStop(1, 'rgba(0, 0, 0, 0)');
+  ctx.fillStyle = glow;
+  ctx.fillRect(0, 0, 1024, 512);
+
+  for (let i = 0; i < 26; i++) {
+    const x = Math.random() * 1024;
+    const y = 70 + Math.random() * 220;
+    const r = 70 + Math.random() * 180;
+    const cloud = ctx.createRadialGradient(x, y, 0, x, y, r);
+    cloud.addColorStop(0, `rgba(190, 205, 205, ${0.05 + Math.random() * 0.06})`);
+    cloud.addColorStop(1, 'rgba(120, 140, 140, 0)');
+    ctx.fillStyle = cloud;
+    ctx.fillRect(x - r, y - r, r * 2, r * 2);
+  }
+
+  const tex = new THREE.CanvasTexture(c);
+  tex.mapping = THREE.EquirectangularReflectionMapping;
+  tex.colorSpace = THREE.SRGBColorSpace;
+  const pmrem = new THREE.PMREMGenerator(renderer);
+  pmrem.compileEquirectangularShader();
+  const env = pmrem.fromEquirectangular(tex).texture;
+  scene.environment = env;
+  scene.environmentIntensity = 0.36;
+  tex.dispose();
+  pmrem.dispose();
+}
 
 function defaultState() {
   const s = {
@@ -82,7 +133,7 @@ function defaultState() {
     inventory:[
       {id:'coffee', qty:1}, {id:'firstaid', qty:1}, {id:'energy_drink', qty:1}
     ],
-    settings:{ sens:1, volume:.55, invert:false, motion:false },
+    settings:{ sens:1, volume:.55, invert:false, motion:false, fx:true },
     lastSaved:0
   };
   initRelationships(s);
@@ -157,12 +208,15 @@ function applyState() {
   player.lookSensitivity = state.settings?.sens || 1;
   player.invert = !!state.settings?.invert;
   audio.setVolume(state.settings?.volume ?? .55);
+  post.enabled = state.settings?.fx !== false;
+  post.compositeMat.uniforms.uGrain.value = state.settings?.motion ? 0 : 1;
+  document.body.classList.toggle('reduced-motion', !!state.settings?.motion);
   world.setWeirdness(state.weirdness || .1);
   world.setWeather(state.weather || 'rain', true);
   npcs.setWeirdness(state.weirdness || .1);
   const pos = state.player.position;
   if (pos) player.teleport(pos.x, pos.z, pos.yaw || 0);
-  else player.teleport(world.spawn.x, world.spawn.z, 0);
+  else player.teleport(world.spawn.x, world.spawn.z, world.spawn.yaw || 0);
   updateStoryVisibility();
   refreshQuest();
   ui.setPlayer(player);
@@ -243,7 +297,7 @@ function startGame(useSave) {  audio.init();
   if (isTouch) ui.showTouch(true);
   player.arms.visible = true;
   applyState();
-  player.teleport(player.x, player.z, state.player.position?.yaw || 0);
+  player.teleport(player.x, player.z, state.player.position?.yaw ?? world.spawn.yaw ?? 0);
   refreshQuest();
   eventTimer = 55;
   weatherTimer = 80;
@@ -280,7 +334,7 @@ function loop(now) {
       camera.rotation.x = -.03;
     }
     ui.updateHUD(false);
-    renderer.render(scene, camera);
+    post.render(rawDt);
     requestAnimationFrame(loop);
     return;
   }
@@ -311,7 +365,7 @@ function loop(now) {
     audio.update(rawDt * .2);
   }
   if (timingGame) updateTiming(rawDt);
-  renderer.render(scene, camera);
+  post.render(rawDt);
   requestAnimationFrame(loop);
 }
 
@@ -2257,6 +2311,7 @@ function openSettings(returnTo = 'play') {
   $('set-volume').value = state.settings?.volume ?? .55;
   $('set-invert').checked = !!state.settings?.invert;
   $('set-motion').checked = !!state.settings?.motion;
+  $('set-fx').checked = state.settings?.fx !== false;
   ui.showSettings(true);
   try { document.exitPointerLock?.(); } catch {}
 }
@@ -2345,6 +2400,13 @@ function bindEvents() {
   $('set-motion')?.addEventListener('change', (e) => {
     state.settings.motion = e.target.checked;
     document.body.classList.toggle('reduced-motion', e.target.checked);
+    post.compositeMat.uniforms.uGrain.value = e.target.checked ? 0 : 1;
+    saveGame(true);
+  });
+  $('set-fx')?.addEventListener('change', (e) => {
+    state.settings.fx = e.target.checked;
+    post.enabled = e.target.checked;
+    saveGame(true);
   });
 
   $('look-hint').addEventListener('click', requestLock);
@@ -2423,10 +2485,12 @@ function bindEvents() {
   });
 
   window.addEventListener('resize', () => {
+    const pr = Math.min(devicePixelRatio || 1, 2);
     camera.aspect = innerWidth / innerHeight;
     camera.updateProjectionMatrix();
+    renderer.setPixelRatio(pr);
     renderer.setSize(innerWidth, innerHeight);
-    renderer.setPixelRatio(Math.min(devicePixelRatio || 1, 2));
+    post.setSize(innerWidth, innerHeight, pr);
   });
 
   document.addEventListener('visibilitychange', () => { if (document.hidden && gameStarted) saveGame(true); });
@@ -2529,6 +2593,7 @@ window.__BELLINGHAM = {
   get npcs() { return npcs; },
   get ui() { return ui; },
   get combat() { return combat; },
+  get post() { return post; },
   get mode() { return gameMode; },
   startGame, saveGame, refreshQuest, setQuestStage, updateStoryVisibility,
   teleport: (x, z, yaw = 0) => { player.teleport(x, z, yaw); saveGame(true); },

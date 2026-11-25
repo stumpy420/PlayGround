@@ -47,7 +47,9 @@ export class Player {
   buildArms() {
     const group = new THREE.Group();
     const sleeveMat = new THREE.MeshStandardMaterial({ color:0x202a2b, roughness:.82 });
-    const skinMat = new THREE.MeshStandardMaterial({ color:0xb98b6e, roughness:.8 });
+    const skinMat = new THREE.MeshStandardMaterial({ color:0x9c7259, roughness:.88 });
+    const gloveMat = new THREE.MeshStandardMaterial({ color:0x1b2223, roughness:.92 });
+    const wrapMat = new THREE.MeshStandardMaterial({ color:0x6b3a32, roughness:.95 });
     const tattooMat = new THREE.MeshStandardMaterial({ color:0x304f4c, roughness:.85 });
     const mkArm = (side) => {
       const arm = new THREE.Group();
@@ -55,15 +57,17 @@ export class Player {
       sleeve.position.set(0,-.1,-.12); sleeve.rotation.x = Math.PI/2.2; arm.add(sleeve);
       const forearm = new THREE.Mesh(new THREE.CapsuleGeometry(.065,.25,3,6), skinMat);
       forearm.position.set(0,-.07,-.42); forearm.rotation.x = Math.PI/2; arm.add(forearm);
-      const fist = new THREE.Mesh(new THREE.SphereGeometry(.1,8,6), skinMat);
+      const fist = new THREE.Mesh(new THREE.SphereGeometry(.1,8,6), gloveMat);
       fist.position.set(0,-.03,-.59); arm.add(fist);
+      const wrap = new THREE.Mesh(new THREE.CylinderGeometry(.072,.078,.1,8), wrapMat);
+      wrap.position.set(0,-.035,-.5); wrap.rotation.x = Math.PI/2; arm.add(wrap);
       if (side > 0) {
         const ink = new THREE.Mesh(new THREE.TorusGeometry(.065,.008,4,10), tattooMat);
         ink.position.set(0,-.05,-.3); ink.rotation.x = Math.PI/2; arm.add(ink);
       }
-      arm.position.set(side * .42, -.4, -.3);
+      arm.position.set(side * .42, -.46, -.32);
       arm.rotation.set(-.15, side * .08, side * .15);
-      arm.scale.setScalar(.72);
+      arm.scale.setScalar(.64);
       group.add(arm);
       return arm;
     };
