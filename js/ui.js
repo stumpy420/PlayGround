@@ -498,7 +498,7 @@ export class UI {
       const equipped = save.loadout.primary === w.id;
       list += `
         <button class="weapon-row ${selected.id === w.id ? 'selected' : ''} ${equipped ? 'equipped' : ''}" data-act="${owned ? 'equipWeapon' : 'buyWeapon'}" data-arg="${w.id}">
-          <span class="w-icon">${w.cls === 'SHOTGUN' ? '▰' : w.cls === 'MARKSMAN' ? '⌖' : w.cls === 'LMG' ? '▤' : '▬'}</span>
+          <span class="w-icon">${w.cls === 'SHOTGUN' ? '▰' : w.cls === 'DMR' ? '⌖' : w.cls === 'LMG' ? '▤' : '▬'}</span>
           <span class="w-info"><strong>${w.name}</strong><span>${w.cls} // ${owned ? (equipped ? 'EQUIPPED' : 'OWNED') : 'LOCKED'}</span></span>
           <span class="w-price ${owned ? 'owned' : save.credits >= w.price ? '' : 'locked'}">${owned ? '✓' : `${w.price} CR`}</span>
         </button>`;
@@ -511,6 +511,12 @@ export class UI {
         <span class="wd-class">${selected.cls} PLATFORM</span>
         <h3>${selected.name}</h3>
         <p>${selected.desc}</p>
+        <div class="weapon-meta">
+          <span>CALIBER <b>${selected.caliber}</b></span>
+          <span>MODE <b>${selected.mode}</b></span>
+          <span>RANGE <b>${selected.range} u</b></span>
+          <span>PEN <b>TIER ${selected.pen}</b></span>
+        </div>
         <div class="stat-bars">
           ${Object.entries(selected.bars).map(([k, v]) => `
             <div class="stat-bar"><span>${k.toUpperCase()}</span><div class="track"><i style="width:${v}%"></i></div><b>${v}</b></div>
