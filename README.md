@@ -56,6 +56,11 @@ Completing an operation unlocks the next one and awards credits for weapons and
 field modifications. Clearing all six unlocks endless skirmish. Progress is
 stored locally under `vanguard.ballistics.save.v2`; **Options → Reset** clears it.
 
+### Weapon data
+
+The full balance table, unit conventions, corrections, and design notes are in
+[`docs/WEAPONS.md`](docs/WEAPONS.md). The live values are in `js/content.js`.
+
 ### Install / offline
 
 The web manifest and service worker provide an installable PWA with an offline

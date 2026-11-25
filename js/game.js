@@ -1082,6 +1082,9 @@ export class Game {
         vx: Math.cos(a) * speed, vy: Math.sin(a) * speed, speed,
         dmg: w.def.dmg * rand(0.92, 1.08), pen: w.def.pen,
         owner: 'player', color: w.def.color, life: 2.4, traveled: 0,
+        range: w.def.range ?? 1200,
+        falloffStart: w.def.falloffStart ?? 0,
+        falloffMin: w.def.falloffMin ?? 0.65,
         ricochets: 0, tracer: Math.random() < 0.65, angle: a, weaponId: w.def.id,
       });
       this.run.shots++;
@@ -1428,7 +1431,15 @@ export class Game {
         const hy = b.y + ny * step * actorT;
         if (b.owner === 'player') {
           const head = Math.random() < 0.1;
-          this.damageEnemy(actor, b.dmg * (1 + b.traveled / 5000), b.angle, head, hx, hy, true);
+          // Damage falls off toward the weapon's effective range instead of
+          // increasing with distance; the latter contradicted the field manual.
+          const traveled = b.traveled + step * actorT;
+          const range = b.range ?? 1200;
+          const start = b.falloffStart ?? 0;
+          const floor = b.falloffMin ?? 0.65;
+          const t = range > start ? clamp((traveled - start) / (range - start), 0, 1) : 0;
+          const falloff = 1 - (1 - floor) * t;
+          this.damageEnemy(actor, b.dmg * falloff, b.angle, head, hx, hy, true);
           this.run.hits++;
           this.hitMarker = 0.16;
           this.hitMarkerHead = head;
