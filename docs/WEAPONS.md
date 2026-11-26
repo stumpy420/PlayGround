@@ -113,6 +113,7 @@ correction.
 | **Magazine** | 20 rounds, 100 reserve (5 magazines) |
 | **Reload** | 2.4 s |
 | **Penetration** | Tier 3 |
+| **Optic** | 3.4× scope; aim-down-sights narrows the field of view and adds scope sway. |
 | **Special Attributes** | Highest accuracy and penetration; slowest follow-up shot among rifles. |
 | **Description** | 7.62×51mm designated marksman rifle. High velocity and penetration reward precise fire at long range. |
 
@@ -123,6 +124,7 @@ correction.
 - **Reload 2.2 → 2.4 s.** The slightly longer reload offsets the larger magazine and keeps the DMR’s uptime in line with its damage.
 - **Added 7.62×51mm, range, and falloff.** The new 85% floor at 1,800 units preserves the DMR’s long-range identity while still making extreme distance matter.
 - **Rebalanced bars to 96/21/92/100.** The old 30 rate bar overstated a 190 RPM rifle, and the 94 accuracy bar was inconsistent with the new shared accuracy scale.
+- **Added a 3.4× optic.** The `scope` field drives both the aim-down-sights zoom and the scope overlay, so the DMR’s long-range identity is visible in play rather than only in its stat bars.
 
 ### 5. M249 BASTION
 
