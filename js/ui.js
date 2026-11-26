@@ -39,6 +39,7 @@ export class UI {
     this.el.focusBtn = document.querySelector('[data-action="focus"] small');
     this.el.dashBtn = document.querySelector('[data-action="dash"] small');
     this.el.reloadBtn = document.querySelector('[data-action="reload"] small');
+    this.el.aimBtn = $('btn-aim');
   }
 
   init() {
@@ -278,9 +279,18 @@ export class UI {
     this.el['damage-flash'].style.opacity = String(clamp(g.damageFlash, 0, 1) * 0.85);
     this.el['low-health'].classList.toggle('active', p.hp < 32 && !p.dead);
     if (this.el['lock-hint']) {
-      const showLock = !g.isTouch && g.state === 'playing' && !document.pointerLockElement;
+      const showLock = !g.isTouch && g.state === 'playing' && !document.pointerLockElement && !g.isAiming();
       this.el['lock-hint'].classList.toggle('hidden', !showLock);
     }
+  }
+
+  setAimActive(active) {
+    const btn = this.el?.aimBtn;
+    if (!btn) return;
+    btn.classList.toggle('aiming', !!active);
+    btn.setAttribute('aria-pressed', active ? 'true' : 'false');
+    const label = btn.querySelector('small');
+    if (label) label.textContent = active ? 'AIM ON' : 'AIM';
   }
 
   showToast(text, type = '', duration = 2200) {
@@ -515,6 +525,7 @@ export class UI {
           <span>CALIBER <b>${selected.caliber}</b></span>
           <span>MODE <b>${selected.mode}</b></span>
           <span>RANGE <b>${selected.range} u</b></span>
+          <span>OPTIC <b>${selected.scope ? `${selected.scope.toFixed(1)}×` : 'IRON'}</b></span>
           <span>PEN <b>TIER ${selected.pen}</b></span>
         </div>
         <div class="stat-bars">
@@ -584,17 +595,20 @@ export class UI {
             <kbd>WASD</kbd><span>Move / strafe</span>
             <kbd>MOUSE</kbd><span>Look around (click to lock)</span>
             <kbd>LMB</kbd><span>Fire (hold for auto)</span>
+            <kbd>RMB</kbd><span>Aim down sights / scope</span>
             <kbd>R</kbd><span>Reload</span>
             <kbd>G</kbd><span>Throw frag grenade</span>
             <kbd>Q</kbd><span>Tactical Focus</span>
             <kbd>SPACE</kbd><span>Dash / dodge</span>
             <kbd>1 / 2</kbd><span>Swap primary & sidearm</span>
+            <kbd>PAD</kbd><span>LT aim · RT fire · LB focus · Start pause</span>
             <kbd>ESC</kbd><span>Pause / release cursor</span>
           </div>
         </div>
         <div class="manual-card">
           <h3>TOUCH CONTROLS</h3>
           <p>Left half: drag to move. Right half: drag to look around. Hold the round FIRE button to shoot.</p>
+          <p>Tap AIM to shoulder the weapon; scoped weapons raise a magnified optic. Tap again to lower it.</p>
           <p>Use reload before a push. Dash makes you briefly invulnerable. Grenades bounce and detonate on a fuse.</p>
           <p>Landscape gives the widest field of view. Aim assist can be disabled in Options.</p>
         </div>

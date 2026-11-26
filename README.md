@@ -40,6 +40,7 @@ requires HTTP or HTTPS.
 | Move | `WASD` / arrows | Left stick | Left stick |
 | Look | Mouse (click to lock) | Right stick | Right stick |
 | Fire | Left mouse button | Hold **FIRE** | RT / RB |
+| Aim / scope | Right mouse button | **AIM** toggle | LT |
 | Reload | `R` | Reload button | X |
 | Frag | `G` | Frag button | B |
 | Dash | `Space` | Dash button | A |

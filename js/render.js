@@ -147,6 +147,26 @@ export class Renderer {
     cam.sy = randShake(cam.shake * 0.55);
   }
 
+  // Aim-down-sights blend: 0 = hip fire, 1 = fully shouldered.
+  aimAmount() {
+    const p = this.game?.player;
+    return p ? clamp(p.aimT || 0, 0, 1) : 0;
+  }
+
+  scopeZoom() {
+    const p = this.game?.player;
+    if (!p) return 1;
+    const def = p.weapons?.[p.slot]?.def;
+    return def?.scope || 1.16;
+  }
+
+  // Narrow the projection while aiming. Scoped weapons pull in much further.
+  viewFov() {
+    const k = this.aimAmount();
+    const zoom = 1 + (this.scopeZoom() - 1) * k;
+    return this.fov / zoom;
+  }
+
   // Screen-space pan for positional audio, relative to where the operator looks.
   panFor(x, y) {
     const p = this.game.player;
@@ -166,7 +186,7 @@ export class Renderer {
     const dy = y - p.y;
     const cos = Math.cos(p.angle);
     const sin = Math.sin(p.angle);
-    const plane = Math.tan(this.fov / 2);
+    const plane = Math.tan(this.viewFov() / 2);
     const depth = cos * dx + sin * dy;
     if (depth <= 2) return null;
     const lateral = -sin * dx + cos * dy;
@@ -871,6 +891,7 @@ export class Renderer {
     this.drawTexts();
     this.drawEnemyOverlays();
     this.drawViewmodel();
+    this.drawScope();
     this.drawCrosshair();
     this.drawObjectiveMarkers();
     this.drawMinimap();
@@ -911,7 +932,7 @@ export class Renderer {
     const pal = g.map.palette;
     const vw = this.view.w;
     const vh = this.view.h;
-    const focal = vw / 2 / Math.tan(this.fov / 2);
+    const focal = vw / 2 / Math.tan(this.viewFov() / 2);
     const horizon = clamp(vh / 2 + Math.tan(g.player.pitch) * focal, -vh, vh * 2);
     const sky = ctx.createLinearGradient(0, 0, 0, Math.max(1, horizon));
     sky.addColorStop(0, pal.fog);
@@ -945,11 +966,11 @@ export class Renderer {
     const zbuf = this.zbuf;
     data.fill(0);
     zbuf.fill(1e9);
-    const focal = bw / 2 / Math.tan(this.fov / 2);
+    const focal = bw / 2 / Math.tan(this.viewFov() / 2);
     const horizon = bh / 2 + Math.tan(p.pitch) * focal;
     const cos = Math.cos(p.angle);
     const sin = Math.sin(p.angle);
-    const plane = Math.tan(this.fov / 2);
+    const plane = Math.tan(this.viewFov() / 2);
     const planeX = -sin * plane;
     const planeY = cos * plane;
     this.castPlanes(focal, horizon, cos, sin, planeX, planeY);
@@ -1122,7 +1143,7 @@ export class Renderer {
     }
     const cos = Math.cos(p.angle);
     const sin = Math.sin(p.angle);
-    const plane = Math.tan(this.fov / 2);
+    const plane = Math.tan(this.viewFov() / 2);
     const planeX = -sin * plane;
     const planeY = cos * plane;
     const invDet = 1 / (planeX * sin - cos * planeY);
@@ -1366,10 +1387,13 @@ export class Renderer {
     const cx = this.view.w / 2;
     const cy = this.view.h / 2;
     const w = p.weapons[p.slot];
+    const aim = this.aimAmount();
+    // The scope paints its own reticle once the lens is up.
+    if ((w.def.scope || 0) > 0 && aim > 0.55) return;
     const target = this.aimTarget();
     const moving = Math.hypot(p.vx, p.vy) > 45;
     const spread = w.def.spread + p.heat * 0.65 + (moving ? 1.6 : 0) + p.recoilKick * 0.4;
-    const radius = clamp(7 + spread * 1.1, 6, 26);
+    const radius = lerp(clamp(7 + spread * 1.1, 6, 26), 3.5, aim);
     const color = target ? '248,113,113' : p.focusActive > 0 ? '196,181,253' : '226,240,250';
     ctx.save();
     ctx.strokeStyle = `rgba(${color},0.9)`;
@@ -1521,12 +1545,25 @@ export class Renderer {
     const swapK = p.swapT > 0 ? Math.sin((1 - p.swapT / 0.34) * Math.PI) : 0;
     const focus = p.focusActive > 0;
     const pistol = cls === 'PISTOL';
+    const aim = this.aimAmount();
+    const scoped = (def.scope || 0) > 0;
+    // Do not shoulder the weapon mid-reload or mid-swap.
+    const ads = aim * (1 - swapK) * (1 - reloadK * 0.7);
+    const bobScale = 1 - ads * 0.82;
     const s = clamp(Math.min(vw, vh) / 560, 0.6, 1.45) * (pistol ? 0.85 : 1);
-    const ox = vw * 0.74 + bobX + this.camera.sx * 0.5;
-    const oy = vh * 0.87 + bobY + recoil * 2.2 + reloadK * vh * 0.2 + swapK * vh * 0.36 + this.camera.sy * 0.5;
+    const muzzleDist = pistol ? 184 : 268;
+    const hipX = vw * 0.74;
+    const hipY = vh * 0.87;
+    const adsX = vw * 0.5;
+    const adsY = vh * 0.5 + muzzleDist * s;
+    const ox = lerp(hipX, adsX, ads) + bobX * bobScale + this.camera.sx * (0.5 - ads * 0.3);
+    const oy = lerp(hipY, adsY, ads) + bobY * bobScale + recoil * 2.2 * (1 - ads * 0.45)
+      + reloadK * vh * 0.2 + swapK * vh * 0.36 + this.camera.sy * (0.5 - ads * 0.3);
     ctx.save();
+    ctx.globalAlpha = scoped ? 1 - ads * 0.92 : 1;
     ctx.translate(ox, oy);
-    ctx.rotate(1.02 + recoil * 0.008 + reloadK * 0.26 - swapK * 0.18);
+    // Shouldering rolls the weapon upright so the bore points at the reticle.
+    ctx.rotate(lerp(1.02, Math.PI / 2, ads) + recoil * 0.008 + reloadK * 0.26 - swapK * 0.18);
     ctx.scale(s, s);
 
     const metal = (a, b) => {
@@ -1793,6 +1830,114 @@ export class Renderer {
       ctx.fillRect(0, 0, vw, vh);
       ctx.restore();
     }
+  }
+
+  // Scope overlay: blacked-out surround, lens vignette, illuminated reticle.
+  drawScope() {
+    const g = this.game;
+    const p = g.player;
+    if (!p || p.dead) return;
+    const def = p.weapons[p.slot]?.def;
+    if (!def?.scope) return;
+    const k = this.aimAmount();
+    if (k < 0.015) return;
+    const ctx = this.ctx;
+    const vw = this.view.w;
+    const vh = this.view.h;
+    const ease = k * k * (3 - 2 * k);
+    const radius = Math.min(vw, vh) * lerp(0.8, 0.44, ease);
+    const alpha = clamp(ease * 1.5, 0, 1);
+    const cx = vw / 2 + Math.sin(g.time * 1.15) * 1.5 * ease;
+    const cy = vh / 2 + Math.cos(g.time * 0.9) * 1.1 * ease;
+    ctx.save();
+    ctx.globalAlpha = alpha;
+
+    // Opaque surround with a circular aperture.
+    ctx.beginPath();
+    ctx.rect(0, 0, vw, vh);
+    ctx.arc(cx, cy, radius, 0, Math.PI * 2);
+    ctx.fillStyle = '#010203';
+    ctx.fill('evenodd');
+
+    // Lens tint, edge falloff and glare.
+    ctx.save();
+    ctx.beginPath();
+    ctx.arc(cx, cy, radius, 0, Math.PI * 2);
+    ctx.clip();
+    const lens = ctx.createRadialGradient(cx, cy, radius * 0.08, cx, cy, radius);
+    lens.addColorStop(0, 'rgba(150,205,195,0.015)');
+    lens.addColorStop(0.6, 'rgba(20,54,58,0.07)');
+    lens.addColorStop(0.86, 'rgba(3,12,16,0.5)');
+    lens.addColorStop(1, 'rgba(0,0,0,0.92)');
+    ctx.fillStyle = lens;
+    ctx.fillRect(cx - radius, cy - radius, radius * 2, radius * 2);
+    const glare = ctx.createLinearGradient(cx - radius, cy - radius, cx + radius, cy + radius);
+    glare.addColorStop(0, 'rgba(180,230,255,0.09)');
+    glare.addColorStop(0.32, 'rgba(180,230,255,0.02)');
+    glare.addColorStop(0.6, 'rgba(180,230,255,0)');
+    ctx.fillStyle = glare;
+    ctx.fillRect(cx - radius, cy - radius, radius * 2, radius * 2);
+
+    // Reticle: duplex posts, fine crosshair, mil dots, illuminated center.
+    const reticle = 'rgba(198,232,224,0.82)';
+    const post = Math.max(12, radius * 0.3);
+    const gap = Math.max(5, radius * 0.035);
+    ctx.strokeStyle = reticle;
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(cx - radius * 0.94, cy);
+    ctx.lineTo(cx - gap, cy);
+    ctx.moveTo(cx + gap, cy);
+    ctx.lineTo(cx + radius * 0.94, cy);
+    ctx.moveTo(cx, cy - radius * 0.94);
+    ctx.lineTo(cx, cy - gap);
+    ctx.moveTo(cx, cy + gap);
+    ctx.lineTo(cx, cy + radius * 0.94);
+    ctx.stroke();
+    ctx.lineWidth = 3.2;
+    ctx.beginPath();
+    ctx.moveTo(cx - radius * 0.94, cy);
+    ctx.lineTo(cx - radius + post, cy);
+    ctx.moveTo(cx + radius - post, cy);
+    ctx.lineTo(cx + radius * 0.94, cy);
+    ctx.moveTo(cx, cy - radius * 0.94);
+    ctx.lineTo(cx, cy - radius + post);
+    ctx.moveTo(cx, cy + radius - post);
+    ctx.lineTo(cx, cy + radius * 0.94);
+    ctx.stroke();
+    ctx.fillStyle = reticle;
+    for (let i = 1; i <= 5; i++) {
+      const d = i * radius * 0.09;
+      const r = Math.max(1, 1.9 - i * 0.22);
+      ctx.beginPath();
+      ctx.arc(cx, cy + d, r, 0, Math.PI * 2);
+      ctx.arc(cx + d, cy, r, 0, Math.PI * 2);
+      ctx.fill();
+    }
+    ctx.fillStyle = 'rgba(255,120,90,0.95)';
+    ctx.beginPath();
+    ctx.arc(cx, cy, 1.7, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.restore();
+
+    // Machined outer ring and inner shadow.
+    ctx.lineWidth = Math.max(3, radius * 0.018);
+    ctx.strokeStyle = 'rgba(6,10,12,0.9)';
+    ctx.beginPath();
+    ctx.arc(cx, cy, radius + ctx.lineWidth * 0.5, 0, Math.PI * 2);
+    ctx.stroke();
+    ctx.lineWidth = 1;
+    ctx.strokeStyle = 'rgba(148,180,190,0.18)';
+    ctx.beginPath();
+    ctx.arc(cx, cy, radius - 1, 0, Math.PI * 2);
+    ctx.stroke();
+
+    // Magnification readout.
+    ctx.fillStyle = 'rgba(170,205,200,0.62)';
+    ctx.font = '600 9px "JetBrains Mono", monospace';
+    ctx.textAlign = 'center';
+    ctx.fillText(`${def.name}  ·  ${def.scope.toFixed(1)}×`, cx, cy + radius * 0.82);
+    ctx.restore();
   }
 
   drawMinimap() {

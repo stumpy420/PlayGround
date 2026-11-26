@@ -1,6 +1,6 @@
 // Offline shell for Vanguard Ballistics. Network-first with a cached fallback so
 // deployed updates are picked up on the next load while offline play still works.
-const CACHE = 'vanguard-ballistics-v6';
+const CACHE = 'vanguard-ballistics-v7';
 const ASSETS = [
   './',
   './index.html',

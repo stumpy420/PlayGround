@@ -55,10 +55,11 @@ export class Game {
     this.isTouch = window.matchMedia('(pointer: coarse)').matches || 'ontouchstart' in window;
     this.input = {
       keys: new Set(),
-      mouse: { x: 0, y: 0, down: false, type: 'mouse', locked: false },
+      mouse: { x: 0, y: 0, down: false, aim: false, type: 'mouse', locked: false },
       sticks: { move: null, aim: null },
-      pad: { moveX: 0, moveY: 0, aimX: 0, aimY: 0, fire: false, prev: [] },
+      pad: { moveX: 0, moveY: 0, aimX: 0, aimY: 0, fire: false, aim: false, prev: [] },
       touchFire: false,
+      touchAim: false,
     };
     this.wasLocked = false;
     this.mouseFallback = false;
@@ -113,6 +114,8 @@ export class Game {
     window.addEventListener('blur', () => {
       this.input.keys.clear();
       this.input.mouse.down = false;
+      this.input.mouse.aim = false;
+      this.input.pad.aim = false;
     });
     if ('serviceWorker' in navigator && location.protocol.startsWith('http') && !['localhost', '127.0.0.1'].includes(location.hostname)) {
       navigator.serviceWorker.register('./sw.js').catch(() => {});
@@ -393,6 +396,7 @@ export class Game {
     this.state = 'menu';
     this.input.touchFire = false;
     this.input.mouse.down = false;
+    this.resetAim();
     if (document.pointerLockElement) document.exitPointerLock?.();
     this.player = null;
     this.enemies = [];
@@ -433,6 +437,7 @@ export class Game {
     const p = {
       x: this.map.playerSpawn.x, y: this.map.playerSpawn.y, r: 13,
       angle: -Math.PI / 2, pitch: 0, lookT: 0, vx: 0, vy: 0,
+      aimT: 0,
       hp: 100, maxHp: 100, armor: mods.maxArmor, maxArmor: mods.maxArmor,
       speed: 205 * mods.speed, weapons: [makeWeaponState(primary), makeWeaponState({ ...SIDEARM })],
       slot: 0, swapT: 0, fireCd: 0, heat: 0, walk: 0,
@@ -556,9 +561,11 @@ export class Game {
     window.addEventListener('keyup', (e) => this.input.keys.delete(e.code));
     this.canvas.addEventListener('contextmenu', (e) => e.preventDefault());
     this.canvas.addEventListener('pointerdown', (e) => this.onPointerDown(e));
+    this.canvas.addEventListener('mousedown', (e) => this.onMouseDown(e));
     window.addEventListener('pointermove', (e) => this.onPointerMove(e));
     window.addEventListener('pointerup', (e) => this.onPointerUp(e));
     window.addEventListener('pointercancel', (e) => this.onPointerUp(e));
+    window.addEventListener('mouseup', (e) => this.onMouseUp(e));
     document.addEventListener('pointerlockchange', () => {
       const locked = document.pointerLockElement === this.canvas;
       this.input.mouse.locked = locked;
@@ -567,6 +574,7 @@ export class Game {
         this.mouseFallback = false;
       } else if (this.wasLocked) {
         this.wasLocked = false;
+        this.input.mouse.aim = false;
         if (this.state === 'playing' && !this.isTouch) this.pause();
       }
     });
@@ -600,18 +608,40 @@ export class Game {
     document.addEventListener('gesturestart', (e) => e.preventDefault());
   }
 
-  onPointerDown(e) {
+  // Mouse buttons are tracked individually so aiming and firing can overlap.
+  // Pointer events only report the first button in a chord, so use mouse events.
+  isSyntheticMouse(e) {
+    return Boolean(e.sourceCapabilities?.firesTouchEvents || e.mozInputSource === 5);
+  }
+
+  onMouseDown(e) {
+    if (this.isSyntheticMouse(e)) return;
     this.ensureAudio();
     if (this.state !== 'playing') return;
-    if (e.pointerType === 'mouse') {
-      this.input.mouse.type = 'mouse';
-      if (e.button === 0 && !this.isTouch && !this.input.mouse.locked && !this.mouseFallback) {
+    this.input.mouse.type = 'mouse';
+    if (e.button === 2) {
+      this.input.mouse.aim = true;
+      return;
+    }
+    if (e.button === 0) {
+      if (!this.isTouch && !this.input.mouse.locked && !this.mouseFallback) {
         this.requestLock();
         return;
       }
-      this.input.mouse.down = e.button === 0;
-      return;
+      this.input.mouse.down = true;
     }
+  }
+
+  onMouseUp(e) {
+    if (this.isSyntheticMouse(e)) return;
+    if (e.button === 0) this.input.mouse.down = false;
+    if (e.button === 2) this.input.mouse.aim = false;
+  }
+
+  onPointerDown(e) {
+    this.ensureAudio();
+    if (this.state !== 'playing') return;
+    if (e.pointerType === 'mouse') return;
     const rect = this.canvas.getBoundingClientRect();
     const x = e.clientX - rect.left;
     const y = e.clientY - rect.top;
@@ -645,7 +675,9 @@ export class Game {
   lookBy(dx, dy) {
     const p = this.player;
     if (!p || this.state !== 'playing') return;
-    const sens = 0.0021 * (0.45 + (this.save.settings.sensitivity ?? 0.55) * 1.7);
+    // Scoped view slows the look rate so the magnified image stays controllable.
+    const zoom = 1 + ((this.renderer?.scopeZoom?.() || 1) - 1) * (p.aimT || 0);
+    const sens = 0.0021 * (0.45 + (this.save.settings.sensitivity ?? 0.55) * 1.7) / Math.max(1, zoom);
     p.angle = angleWrap(p.angle + dx * sens);
     p.pitch = clamp(p.pitch - dy * sens * 0.8, -0.62, 0.62);
     p.lookT = 0.6;
@@ -683,16 +715,21 @@ export class Game {
   }
 
   onPointerUp(e) {
-    if (e.pointerType === 'mouse') {
-      if (e.button === 0) this.input.mouse.down = false;
-      return;
-    }
+    if (e.pointerType === 'mouse') return;
     for (const side of ['move', 'aim']) {
       const stick = this.input.sticks[side];
       if (!stick || stick.id !== e.pointerId) continue;
       this.input.sticks[side] = null;
       this.ui.hideJoystick(side);
     }
+  }
+
+  toggleAim() {
+    if (this.state !== 'playing') return;
+    this.input.touchAim = !this.input.touchAim;
+    this.ui?.setAimActive?.(this.input.touchAim);
+    this.ensureAudio();
+    this.audio.ui(true);
   }
 
   performAction(action) {
@@ -704,6 +741,7 @@ export class Game {
     else if (action === 'dash') this.dash();
     else if (action === 'focus') this.activateFocus();
     else if (action === 'swap') this.swapWeapon();
+    else if (action === 'aim') this.toggleAim();
   }
 
   pause() {
@@ -713,6 +751,7 @@ export class Game {
     this.input.mouse.down = false;
     this.input.touchFire = false;
     $('btn-fire')?.classList.remove('held');
+    this.resetAim();
     this.input.sticks.move = null;
     this.input.sticks.aim = null;
     this.ui.hideJoystick('move');
@@ -899,6 +938,19 @@ export class Game {
     return angle + clamp(best.diff, -maxPull, maxPull);
   }
 
+  isAiming() {
+    if (this.state !== 'playing') return false;
+    return Boolean(this.input.mouse.aim || this.input.touchAim || this.input.pad.aim);
+  }
+
+  resetAim() {
+    this.input.mouse.aim = false;
+    this.input.touchAim = false;
+    this.input.pad.aim = false;
+    if (this.player) this.player.aimT = 0;
+    this.ui?.setAimActive?.(false);
+  }
+
   getAimInput() {
     const p = this.player;
     if (!p) return { angle: 0, firing: false, mode: 'mouse' };
@@ -931,6 +983,8 @@ export class Game {
       this.input.pad.moveY = 0;
       this.input.pad.aimX = 0;
       this.input.pad.aimY = 0;
+      this.input.pad.aim = false;
+      this.input.pad.prev = [];
       return;
     }
     const dead = (v) => (Math.abs(v) > 0.18 ? v : 0);
@@ -939,13 +993,14 @@ export class Game {
     this.input.pad.aimX = dead(gp.axes[2] || 0);
     this.input.pad.aimY = dead(gp.axes[3] || 0);
     this.input.pad.fire = Boolean(gp.buttons[7]?.pressed || gp.buttons[5]?.pressed);
+    this.input.pad.aim = Boolean(gp.buttons[6]?.pressed);
     const pressed = (i) => Boolean(gp.buttons[i]?.pressed);
     const edge = (i) => pressed(i) && !this.input.pad.prev[i];
     if (edge(2)) this.startReload();
     if (edge(1)) this.throwGrenade();
     if (edge(0)) this.dash();
     if (edge(3)) this.swapWeapon();
-    if (edge(6)) this.activateFocus();
+    if (edge(4)) this.activateFocus();
     if (edge(9)) this.togglePause();
     this.input.pad.prev = gp.buttons.map((b) => b.pressed);
   }
@@ -1001,6 +1056,8 @@ export class Game {
     p.recoilKick = damp(p.recoilKick, 0, 16, dt);
     p.heat = damp(p.heat, 0, 3.6, dt);
     p.muzzleT = Math.max(0, p.muzzleT - realDt);
+    const aiming = this.isAiming() && !w.reloading && p.swapT <= 0.1;
+    p.aimT = damp(p.aimT || 0, aiming ? 1 : 0, 18, realDt);
     if (w.reloading) {
       w.reloadT -= dt;
       if (w.reloadT <= 0) this.finishReload(w);
@@ -1013,6 +1070,7 @@ export class Game {
     }
     p.lookT = Math.max(0, (p.lookT || 0) - realDt);
     let speed = p.speed * (move.sprint && !this.isTouch ? 1.3 : 1);
+    if (aiming && p.dashT <= 0) speed *= 0.62;
     let tx = 0;
     let ty = 0;
     if (p.dashT > 0) {
@@ -1071,6 +1129,7 @@ export class Game {
     const moving = Math.hypot(p.vx, p.vy) > 40;
     let spread = w.def.spread + p.heat * 0.7 + (moving ? 1.1 : 0);
     if (p.focusActive > 0) spread *= 0.72;
+    if (this.isAiming()) spread *= 0.45;
     const muzzleX = p.x + Math.cos(p.angle) * 22;
     const muzzleY = p.y + Math.sin(p.angle) * 22;
     const pellets = w.def.pellets || 1;
@@ -1091,7 +1150,7 @@ export class Game {
     }
     w.mag--;
     p.fireCd = 60 / w.def.rpm;
-    p.heat = Math.min(9, p.heat + w.def.recoil * 0.75);
+    p.heat = Math.min(9, p.heat + w.def.recoil * 0.75 * (this.isAiming() ? 0.65 : 1));
     p.muzzleT = 0.055;
     p.muzzleAngle = p.angle;
     p.recoilKick = 4;
@@ -1619,6 +1678,7 @@ export class Game {
     this.state = 'results';
     this.input.mouse.down = false;
     this.input.touchFire = false;
+    this.resetAim();
     if (document.pointerLockElement) document.exitPointerLock?.();
     document.body.classList.remove('playing');
     this.audio.fail();
@@ -1913,6 +1973,7 @@ export class Game {
     this.state = 'results';
     this.input.touchFire = false;
     this.input.mouse.down = false;
+    this.resetAim();
     if (document.pointerLockElement) document.exitPointerLock?.();
     document.body.classList.remove('playing');
     const run = this.run;

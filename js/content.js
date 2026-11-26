@@ -106,6 +106,7 @@ export const WEAPONS = {
     recoil: 2.0,
     caliber: '7.62×51mm',
     mode: 'SEMI-AUTO',
+    scope: 3.4,
     range: 1800,
     falloffStart: 800,
     falloffMin: 0.85,
